@@ -1,0 +1,168 @@
+# ============================================================================
+# pg_hba.conf - PostgreSQL Client Authentication Configuration File
+# ============================================================================
+#
+# Este archivo controla: qué usuarios pueden conectarse, desde dónde,
+# a qué bases de datos y qué método de autenticación usar.
+#
+# Formato:
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+#
+# TYPES:
+#   local      - Unix domain socket connections (solo Linux/Mac)
+#   host       - TCP/IP connections (encrypted or not)
+#   hostssl    - TCP/IP connections with SSL
+#   hostnossl  - TCP/IP connections without SSL
+#
+# DATABASE:
+#   all             - Todas las bases de datos
+#   sameuser        - BD con el mismo nombre que el usuario
+#   nombre_bd       - Base de datos específica
+#   @archivo        - Nombres de BD desde un archivo
+#
+# USER:
+#   all             - Todos los usuarios
+#   nombre_usuario  - Usuario específico
+#   +nombre_rol     - Todos los miembros de un rol
+#   @archivo        - Nombres de usuario desde un archivo
+#
+# ADDRESS:
+#   all                    - Cualquier IP
+#   127.0.0.1/32          - Solo localhost (IPv4)
+#   ::1/128               - Solo localhost (IPv6)
+#   192.168.1.0/24        - Subred específica
+#   nombre_host           - Hostname específico
+#
+# METHODS:
+#   trust       - Permitir conexión sin contraseña (⚠️ INSEGURO)
+#   reject      - Rechazar conexión
+#   md5         - Autenticación con contraseña MD5 (legacy)
+#   scram-sha-256 - Autenticación con contraseña (moderna, RECOMENDADA)
+#   password    - Contraseña en texto plano (NO USAR)
+#   peer        - Usuario del OS (solo local en Linux/Mac)
+#   ident       - Usuario del OS vía identd server
+#   cert        - Certificado SSL del cliente
+#   pam         - PAM (Pluggable Authentication Modules)
+#   ldap        - LDAP
+#   radius      - RADIUS
+#   gss         - GSSAPI
+#
+# ============================================================================
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# ============================================================================
+# CONFIGURACIÓN DE DESARROLLO (Local)
+# ============================================================================
+
+# Superusuario desde localhost (sin contraseña - SOLO DESARROLLO)
+# ⚠️ NUNCA uses esto en producción
+# local   all             postgres                                trust
+# host    all             postgres        127.0.0.1/32            trust
+# host    all             postgres        ::1/128                 trust
+
+# ============================================================================
+# CONFIGURACIÓN RECOMENDADA PARA DESARROLLO
+# ============================================================================
+
+# Permitir al superusuario desde localhost con contraseña
+host    all             postgres        127.0.0.1/32            scram-sha-256
+host    all             postgres        ::1/128                 scram-sha-256
+
+# Permitir a todos los usuarios desde localhost con contraseña
+host    all             all             127.0.0.1/32            scram-sha-256
+host    all             all             ::1/128                 scram-sha-256
+
+# Permitir desde la red de Docker (si usas múltiples contenedores)
+host    all             all             172.16.0.0/12           scram-sha-256
+
+# ============================================================================
+# CONFIGURACIÓN PARA PRODUCCIÓN
+# ============================================================================
+
+# Solo usuario específico desde localhost
+# host    mydatabase      myappuser       127.0.0.1/32            scram-sha-256
+
+# Usuarios de aplicación desde red específica
+# host    mydatabase      myappuser       192.168.1.0/24          scram-sha-256
+
+# Usuario de solo lectura desde cualquier lugar con SSL
+# hostssl mydatabase      readonly        0.0.0.0/0               scram-sha-256
+
+# Replicación - Solo desde servidor de réplica
+# host    replication     replicator      192.168.1.100/32        scram-sha-256
+
+# ============================================================================
+# REGLAS ESPECIALES
+# ============================================================================
+
+# Rechazar conexiones de usuario específico
+# host    all             baduser         all                     reject
+
+# Permitir backup user solo desde servidor de backup
+# host    all             backup_user     192.168.1.50/32         scram-sha-256
+
+# ============================================================================
+# EJEMPLO COMPLETO PARA UN PROYECTO
+# ============================================================================
+
+# # Superusuario solo desde localhost
+# host    all             postgres        127.0.0.1/32            scram-sha-256
+# 
+# # Usuario de aplicación desde red de backend
+# host    myapp_db        app_user        172.18.0.0/16           scram-sha-256
+# 
+# # Usuario de solo lectura desde red de analytics
+# host    myapp_db        readonly        172.19.0.0/16           scram-sha-256
+# 
+# # Replicación desde servidor secundario
+# host    replication     replicator      192.168.1.100/32        scram-sha-256
+# 
+# # Backup user solo desde servidor de backup con SSL
+# hostssl all             backup_user     192.168.1.50/32         cert
+
+# ============================================================================
+# ORDEN DE EVALUACIÓN
+# ============================================================================
+# 
+# ⚠️ IMPORTANTE: Las reglas se evalúan de ARRIBA hacia ABAJO.
+# La PRIMERA regla que coincide se aplica.
+# 
+# Ejemplo:
+# host    all     all     192.168.1.50/32    reject  ← Se evalúa primero
+# host    all     all     192.168.1.0/24     md5     ← Esta se ignora para .50
+# 
+# ============================================================================
+
+# ============================================================================
+# DEBUGGING
+# ============================================================================
+# 
+# Para ver intentos de conexión fallidos, habilita en postgresql.conf:
+# log_connections = on
+# log_disconnections = on
+# 
+# Recarga la configuración sin reiniciar:
+# docker exec postgres_conection_test psql -U postgres -c "SELECT pg_reload_conf();"
+# 
+# ============================================================================
+
+# ============================================================================
+# NOTAS DE SEGURIDAD
+# ============================================================================
+# 
+# ✅ HACER:
+# - Usar scram-sha-256 siempre que sea posible
+# - Limitar acceso por IP/subred específicas
+# - Usar hostssl para conexiones remotas (SSL obligatorio)
+# - Tener usuarios específicos por aplicación
+# - Aplicar principio de mínimo privilegio
+# 
+# ❌ EVITAR:
+# - trust en producción
+# - password (texto plano)
+# - 0.0.0.0/0 sin SSL
+# - Compartir usuario entre aplicaciones
+# - md5 (usar scram-sha-256 en su lugar)
+# 
+# ============================================================================

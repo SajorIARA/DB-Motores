@@ -1,0 +1,69 @@
+-- =====================================================
+-- Script de Inicialización de PostgreSQL - Ejemplo
+-- =====================================================
+-- 
+-- Este archivo se ejecuta automáticamente la PRIMERA VEZ
+-- que se crea el contenedor de PostgreSQL.
+--
+-- Archivos en /docker-entrypoint-initdb.d/ se ejecutan en
+-- orden alfabético. Usa prefijos numéricos para controlar
+-- el orden: 01-xxx.sql, 02-xxx.sql, etc.
+--
+-- Tipos de archivos soportados:
+-- - .sql (SQL scripts)
+-- - .sql.gz (SQL comprimido)
+-- - .sh (Shell scripts)
+--
+-- ⚠️ IMPORTANTE: Solo se ejecuta si el volumen está vacío.
+-- Si ya existe una BD, estos scripts NO se ejecutan.
+-- =====================================================
+
+-- Crear extensiones útiles
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";      -- UUIDs
+CREATE EXTENSION IF NOT EXISTS "pg_trgm";        -- Búsqueda de texto difusa
+CREATE EXTENSION IF NOT EXISTS "citext";         -- Text case-insensitive
+
+-- Crear un esquema adicional (opcional)
+CREATE SCHEMA IF NOT EXISTS app;
+
+-- Crear tablas de ejemplo
+CREATE TABLE IF NOT EXISTS app.users (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    full_name VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS app.posts (
+    id SERIAL PRIMARY KEY,
+    user_id UUID NOT NULL REFERENCES app.users(id) ON DELETE CASCADE,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Crear índices
+CREATE INDEX IF NOT EXISTS idx_users_email ON app.users(email);
+CREATE INDEX IF NOT EXISTS idx_users_username ON app.users(username);
+CREATE INDEX IF NOT EXISTS idx_posts_user_id ON app.posts(user_id);
+CREATE INDEX IF NOT EXISTS idx_posts_created_at ON app.posts(created_at DESC);
+
+-- Insertar datos de ejemplo
+INSERT INTO app.users (username, email, full_name) VALUES
+    ('john_doe', 'john@example.com', 'John Doe'),
+    ('jane_smith', 'jane@example.com', 'Jane Smith'),
+    ('bob_wilson', 'bob@example.com', 'Bob Wilson')
+ON CONFLICT (username) DO NOTHING;
+
+-- Mensaje de confirmación
+DO $$
+BEGIN
+    RAISE NOTICE '✅ Script de inicialización completado exitosamente';
+    RAISE NOTICE '📊 Base de datos: %', current_database();
+    RAISE NOTICE '👤 Usuario: %', current_user;
+    RAISE NOTICE '🕐 Timestamp: %', NOW();
+END $$;

@@ -1,0 +1,247 @@
+# ============================================================================
+# PostgreSQL Configuration File - EJEMPLO PERSONALIZADO
+# ============================================================================
+# 
+# Este es un archivo de configuración de EJEMPLO con valores comunes.
+# Para usarlo:
+# 
+# 1. Copia este archivo: cp postgresql.conf.example config/postgresql.conf
+# 2. Ajusta los valores según tu servidor
+# 3. Monta el archivo en docker-compose.yml:
+#    volumes:
+#      - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+# 4. Agrega command:
+#    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+#
+# Documentación oficial:
+# https://www.postgresql.org/docs/current/runtime-config.html
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# CONEXIONES Y AUTENTICACIÓN
+# ----------------------------------------------------------------------------
+
+# Número máximo de conexiones concurrentes
+# Considera: Cada conexión consume ~10MB RAM
+max_connections = 100
+
+# Superusuarios adicionales pueden conectarse incluso con max_connections alcanzado
+superuser_reserved_connections = 3
+
+# ----------------------------------------------------------------------------
+# RECURSOS DE MEMORIA
+# ----------------------------------------------------------------------------
+
+# Memoria compartida para caché (25% de RAM, máx 8-16GB)
+# Ejemplos: 256MB, 512MB, 1GB, 2GB, 4GB, 8GB
+shared_buffers = 2GB
+
+# Buffer para operaciones de sorting/hashing por query
+# Fórmula: (RAM / max_connections) / 2
+# Ejemplos: 4MB, 10MB, 20MB, 50MB
+work_mem = 20MB
+
+# Buffer para operaciones de mantenimiento (VACUUM, CREATE INDEX)
+# 5-10% de RAM, hasta 1-2GB
+maintenance_work_mem = 512MB
+
+# Estimación de memoria disponible para caché (OS + PostgreSQL)
+# 50-75% de RAM total
+effective_cache_size = 6GB
+
+# Memoria para WAL (Write-Ahead Log)
+# -1 = automático (1/32 de shared_buffers)
+# Min 32kB, Max 1GB generalmente
+wal_buffers = 16MB
+
+# ----------------------------------------------------------------------------
+# WRITE-AHEAD LOG (WAL)
+# ----------------------------------------------------------------------------
+
+# Nivel de información en WAL
+# minimal = sin replicación (mejor performance)
+# replica = para streaming replication
+# logical = para replicación lógica y CDC
+wal_level = replica
+
+# Sincronización de WAL a disco
+# on = más seguro pero más lento (recomendado)
+# off = más rápido pero riesgo de pérdida de datos
+fsync = on
+
+# Método de sincronización (depende del OS)
+# open_datasync, fdatasync, fsync, fsync_writethrough, open_sync
+synchronous_commit = on
+
+# Tamaño máximo de archivos WAL antes de checkpoint
+# Mayor = menos I/O pero recovery más lento
+max_wal_size = 2GB
+min_wal_size = 1GB
+
+# ----------------------------------------------------------------------------
+# REPLICACIÓN
+# ----------------------------------------------------------------------------
+
+# Número de procesos para enviar WAL a réplicas
+max_wal_senders = 10
+
+# Número de slots de replicación
+max_replication_slots = 10
+
+# Archivado de WAL (para PITR - Point In Time Recovery)
+archive_mode = off
+# archive_command = 'cp %p /archive/%f'
+
+# ----------------------------------------------------------------------------
+# QUERY PLANNER
+# ----------------------------------------------------------------------------
+
+# Costo relativo de lectura aleatoria vs secuencial
+# SSD: 1.1-2.0, HDD: 4.0
+random_page_cost = 1.1
+
+# Costo de buscar en disco
+seq_page_cost = 1.0
+
+# Costo de CPU por tupla
+cpu_tuple_cost = 0.01
+
+# Estadísticas para el planner
+# Más alto = estadísticas más precisas pero análisis más lento
+default_statistics_target = 100
+
+# ----------------------------------------------------------------------------
+# CHECKPOINTS
+# ----------------------------------------------------------------------------
+
+# Objetivo de completar checkpoint antes de la próxima
+# 0.0-1.0 (recomendado: 0.9)
+checkpoint_completion_target = 0.9
+
+# Timeout entre checkpoints (tiempo)
+checkpoint_timeout = 5min
+
+# ----------------------------------------------------------------------------
+# LOGGING
+# ----------------------------------------------------------------------------
+
+# Dónde enviar logs
+# stderr, csvlog, syslog, eventlog (Windows)
+log_destination = 'stderr'
+
+# Prefijo de línea de log
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+
+# Qué statements loggear
+# none, ddl, mod, all
+log_statement = 'none'
+
+# Loggear queries que tarden más de X milisegundos
+# -1 = deshabilitado
+log_min_duration_statement = -1
+
+# Loggear conexiones y desconexiones
+log_connections = off
+log_disconnections = off
+
+# Logs de checkpoints
+log_checkpoints = on
+
+# Logs de locks que tarden más de X ms
+log_lock_waits = on
+deadlock_timeout = 1s
+
+# ----------------------------------------------------------------------------
+# AUTOVACUUM (Limpieza automática)
+# ----------------------------------------------------------------------------
+
+# Habilitar autovacuum (RECOMENDADO: on)
+autovacuum = on
+
+# Número de workers de autovacuum
+autovacuum_max_workers = 3
+
+# Naptime entre ciclos de autovacuum
+autovacuum_naptime = 1min
+
+# Memoria por worker de autovacuum
+autovacuum_work_mem = -1  # -1 = usa maintenance_work_mem
+
+# ----------------------------------------------------------------------------
+# LOCK MANAGEMENT
+# ----------------------------------------------------------------------------
+
+# Número máximo de locks por transacción
+max_locks_per_transaction = 64
+
+# ----------------------------------------------------------------------------
+# STATEMENT BEHAVIOR
+# ----------------------------------------------------------------------------
+
+# Timeout para statements individuales
+# 0 = sin límite
+statement_timeout = 0
+
+# Timeout para locks
+# 0 = sin límite
+lock_timeout = 0
+
+# Timeout para idle transactions
+idle_in_transaction_session_timeout = 0
+
+# ----------------------------------------------------------------------------
+# CLIENT CONNECTION DEFAULTS
+# ----------------------------------------------------------------------------
+
+# Search path por defecto
+search_path = '"$user", public'
+
+# Timezone por defecto
+timezone = 'UTC'
+
+# Locale
+lc_messages = 'en_US.UTF-8'
+lc_monetary = 'en_US.UTF-8'
+lc_numeric = 'en_US.UTF-8'
+lc_time = 'en_US.UTF-8'
+
+# Encoding por defecto
+default_text_search_config = 'pg_catalog.english'
+
+# ----------------------------------------------------------------------------
+# EXTENSIONES Y SHARED LIBRARIES
+# ----------------------------------------------------------------------------
+
+# Librerías compartidas a precargar
+# Ejemplo: 'pg_stat_statements, auto_explain'
+# shared_preload_libraries = ''
+
+# ----------------------------------------------------------------------------
+# MONITORING
+# ----------------------------------------------------------------------------
+
+# Estadísticas de queries
+# Para usar pg_stat_statements extension
+# shared_preload_libraries = 'pg_stat_statements'
+# pg_stat_statements.track = all
+# pg_stat_statements.max = 10000
+
+# Estadísticas de función
+track_functions = none  # none, pl, all
+
+# Estadísticas de actividad
+track_activities = on
+track_counts = on
+track_io_timing = on
+
+# ----------------------------------------------------------------------------
+# NOTAS Y REFERENCIAS
+# ----------------------------------------------------------------------------
+# 
+# Para calcular configuraciones óptimas según tu hardware:
+# https://pgtune.leopard.in.ua/
+#
+# Para más información sobre cada parámetro:
+# https://www.postgresql.org/docs/current/runtime-config.html
+#
+# ============================================================================

@@ -1,0 +1,53 @@
+#!/bin/bash
+# =====================================================
+# Script de Shell para Inicialización - Ejemplo
+# =====================================================
+# 
+# Los scripts .sh también se ejecutan en orden alfabético
+# Útil para tareas más complejas que requieren lógica bash
+# =====================================================
+
+set -e  # Salir si hay error
+
+echo "🚀 Ejecutando configuración adicional..."
+
+# Crear usuarios adicionales
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    -- Crear rol de solo lectura
+    CREATE ROLE readonly;
+    GRANT CONNECT ON DATABASE $POSTGRES_DB TO readonly;
+    GRANT USAGE ON SCHEMA app TO readonly;
+    GRANT SELECT ON ALL TABLES IN SCHEMA app TO readonly;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT ON TABLES TO readonly;
+    
+    -- Crear usuario de solo lectura
+    CREATE USER reader WITH PASSWORD 'read_only_pass';
+    GRANT readonly TO reader;
+    
+    -- Crear rol de aplicación
+    CREATE ROLE app_role;
+    GRANT CONNECT ON DATABASE $POSTGRES_DB TO app_role;
+    GRANT USAGE ON SCHEMA app TO app_role;
+    GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA app TO app_role;
+    GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA app TO app_role;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_role;
+    ALTER DEFAULT PRIVILEGES IN SCHEMA app GRANT USAGE, SELECT ON SEQUENCES TO app_role;
+    
+    -- Crear usuario de aplicación
+    CREATE USER app_user WITH PASSWORD 'app_pass';
+    GRANT app_role TO app_user;
+EOSQL
+
+echo "✅ Usuarios y roles creados correctamente"
+
+# Configuración adicional
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+    -- Configurar opciones de búsqueda
+    ALTER DATABASE $POSTGRES_DB SET search_path TO app, public;
+    
+    -- Estadísticas
+    ANALYZE;
+EOSQL
+
+echo "✅ Configuración adicional completada"
+echo "📊 Estadísticas actualizadas"

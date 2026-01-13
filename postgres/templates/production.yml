@@ -1,0 +1,278 @@
+# ====================================================================================
+# PLANTILLA: PRODUCCIÓN (PRODUCTION)
+# ====================================================================================
+# Configuración optimizada para alta carga y performance
+# RAM recomendada: 4GB - 8GB+
+# Prioridad: Performance, Seguridad, Estabilidad
+# ====================================================================================
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres_prod
+    hostname: postgres-prod
+    environment:
+      # Credenciales (USAR SECRETS EN PRODUCCIÓN REAL)
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-production_db}
+      
+      # Configuración de producción (alta performance)
+      POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-2GB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-6GB}
+      POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-64MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-512MB}
+      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-200}
+      
+      # WAL y Checkpoints
+      POSTGRES_CHECKPOINT_TIMEOUT: ${POSTGRES_CHECKPOINT_TIMEOUT:-15min}
+      POSTGRES_MAX_WAL_SIZE: ${POSTGRES_MAX_WAL_SIZE:-4GB}
+      POSTGRES_MIN_WAL_SIZE: ${POSTGRES_MIN_WAL_SIZE:-1GB}
+      POSTGRES_WAL_BUFFERS: ${POSTGRES_WAL_BUFFERS:-16MB}
+      
+      # Optimización para SSD
+      POSTGRES_RANDOM_PAGE_COST: ${POSTGRES_RANDOM_PAGE_COST:-1.1}
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: ${POSTGRES_EFFECTIVE_IO_CONCURRENCY:-200}
+      
+      # Autovacuum agresivo
+      POSTGRES_AUTOVACUUM_MAX_WORKERS: ${POSTGRES_AUTOVACUUM_MAX_WORKERS:-4}
+      POSTGRES_AUTOVACUUM_NAPTIME: ${POSTGRES_AUTOVACUUM_NAPTIME:-10s}
+      
+      # Query Planner
+      POSTGRES_DEFAULT_STATISTICS_TARGET: ${POSTGRES_DEFAULT_STATISTICS_TARGET:-100}
+      
+      # Logging (solo errores y queries lentas)
+      POSTGRES_LOG_STATEMENT: ${POSTGRES_LOG_STATEMENT:-none}
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: ${POSTGRES_LOG_MIN_DURATION_STATEMENT:-1000}
+      POSTGRES_LOG_LINE_PREFIX: ${POSTGRES_LOG_LINE_PREFIX:-%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h }
+      
+      # Seguridad
+      POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-scram-sha-256}
+      POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:---auth-host=scram-sha-256 --encoding=UTF8 --locale=C}
+    
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    volumes:
+      # Datos persistentes (considerar almacenamiento SSD/NVMe)
+      - postgres_prod_data:/var/lib/postgresql/data
+      
+      # Configuración personalizada (opcional)
+      # - ../config/postgresql.conf:/etc/postgresql/postgresql.conf
+      # - ../config/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+      
+      # Backups (montar volumen para backups)
+      # - postgres_prod_backups:/backups
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-production_db}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    
+    networks:
+      - prod_network
+    
+    restart: always
+    
+    # Límites de recursos (ajustar según servidor)
+    deploy:
+      resources:
+        limits:
+          cpus: "${POSTGRES_CPU_LIMIT:-4.0}"
+          memory: "${POSTGRES_MEMORY_LIMIT:-8G}"
+        reservations:
+          cpus: "${POSTGRES_CPU_RESERVATION:-2.0}"
+          memory: "${POSTGRES_MEMORY_RESERVATION:-4G}"
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter_prod
+    hostname: postgres-exporter-prod
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-production_db}?sslmode=require"
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres-exporter/queries.yaml"
+      PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
+      PG_EXPORTER_DISABLE_SETTINGS_METRICS: "false"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
+      PG_EXPORTER_EXCLUDE_DATABASES: "template0,template1"
+    
+    ports:
+      - "${EXPORTER_PORT:-9187}:9187"
+    
+    volumes:
+      - ../postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - prod_network
+    
+    restart: always
+    
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_prod
+    hostname: prometheus-prod
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d}"
+      - "--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-50GB}"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--storage.tsdb.wal-compression"
+    
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    
+    volumes:
+      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_prod_data:/prometheus
+      # - ./prometheus/rules:/etc/prometheus/rules:ro  # Reglas de alertas
+    
+    depends_on:
+      - postgres-exporter
+    
+    networks:
+      - prod_network
+    
+    restart: always
+    
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: "4G"
+        reservations:
+          cpus: "1.0"
+          memory: "2G"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_prod
+    hostname: grafana-prod
+    environment:
+      # Credenciales admin (USAR SECRETS)
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+      
+      # Seguridad
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_USERS_ALLOW_ORG_CREATE: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_SECURITY_DISABLE_GRAVATAR: "true"
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: "lax"
+      GF_SECURITY_STRICT_TRANSPORT_SECURITY: "true"
+      
+      # Paths
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_PATHS_DATA: /var/lib/grafana
+      
+      # Servidor
+      GF_SERVER_HTTP_PORT: "3000"
+      GF_SERVER_DOMAIN: ${GF_SERVER_DOMAIN}
+      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL}
+      GF_SERVER_ENFORCE_DOMAIN: "true"
+      
+      # Logging
+      GF_LOG_LEVEL: ${GF_LOG_LEVEL:-info}
+      GF_LOG_MODE: "console file"
+      
+      # SMTP para alertas (configurar)
+      # GF_SMTP_ENABLED: "true"
+      # GF_SMTP_HOST: ${GF_SMTP_HOST}
+      # GF_SMTP_USER: ${GF_SMTP_USER}
+      # GF_SMTP_PASSWORD: ${GF_SMTP_PASSWORD}
+      # GF_SMTP_FROM_ADDRESS: ${GF_SMTP_FROM_ADDRESS}
+    
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    
+    volumes:
+      - grafana_prod_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+      # - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+    
+    depends_on:
+      - prometheus
+    
+    networks:
+      - prod_network
+    
+    restart: always
+    
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: "1G"
+
+volumes:
+  postgres_prod_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${POSTGRES_DATA_PATH:-./data/postgres}
+  
+  prometheus_prod_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${PROMETHEUS_DATA_PATH:-./data/prometheus}
+  
+  grafana_prod_data:
+    driver: local
+
+networks:
+  prod_network:
+    driver: bridge
+    name: prod_network
+    ipam:
+      config:
+        - subnet: ${NETWORK_SUBNET:-172.20.0.0/16}
+
+# ====================================================================================
+# CONFIGURACIÓN EXPLICADA
+# ====================================================================================
+# 
+# CARACTERÍSTICAS:
+# ✅ Configuración de alta performance (2GB shared_buffers)
+# ✅ 200 conexiones simultáneas
+# ✅ Optimizado para SSD (random_page_cost=1.1)
+# ✅ Autovacuum agresivo para mantener performance
+# ✅ Límites de recursos configurados
+# ✅ Retención de 30 días en Prometheus
+# ✅ Seguridad reforzada (sin registro público)
+# ✅ Reinicio automático siempre (restart: always)
+# ✅ Health checks robustos
+# 
+# REQUISITOS PREVIOS:
+# 1. Crear archivo .env con TODAS las variables requeridas
+# 2. Crear directorios de datos: mkdir -p data/postgres data/prometheus
+# 3. Configurar POSTGRES_USER y POSTGRES_PASSWORD (obligatorio)
+# 4. Configurar GF_ADMIN_USER y GF_ADMIN_PASSWORD (obligatorio)
+# 
+# USO:
+# docker-compose -f templates/production.yml --env-file .env up -d
+# 
+# MONITOREO:
+# docker-compose -f templates/production.yml logs -f
+# 
+# BACKUP:
+# docker exec postgres_prod pg_dump -U $POSTGRES_USER $POSTGRES_DB > backup.sql
+# 
+# ====================================================================================

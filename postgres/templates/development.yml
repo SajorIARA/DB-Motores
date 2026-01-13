@@ -1,0 +1,189 @@
+# ====================================================================================
+# PLANTILLA: DESARROLLO (DEVELOPMENT)
+# ====================================================================================
+# Configuración ligera para desarrollo local y testing rápido
+# RAM recomendada: 512MB - 1GB
+# Prioridad: Velocidad de desarrollo > Performance
+# ====================================================================================
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres_dev
+    hostname: postgres-dev
+    environment:
+      # Credenciales básicas (cambiar en .env)
+      POSTGRES_USER: ${POSTGRES_USER:-dev_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_pass_123}
+      POSTGRES_DB: ${POSTGRES_DB:-dev_database}
+      
+      # Configuración de desarrollo (ligera)
+      POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-128MB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-512MB}
+      POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-4MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-64MB}
+      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-20}
+      POSTGRES_CHECKPOINT_TIMEOUT: ${POSTGRES_CHECKPOINT_TIMEOUT:-5min}
+      POSTGRES_MAX_WAL_SIZE: ${POSTGRES_MAX_WAL_SIZE:-512MB}
+      
+      # Logging para desarrollo
+      POSTGRES_LOG_STATEMENT: ${POSTGRES_LOG_STATEMENT:-all}
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: ${POSTGRES_LOG_MIN_DURATION_STATEMENT:-100}
+      
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    volumes:
+      # Datos persistentes
+      - postgres_dev_data:/var/lib/postgresql/data
+      
+      # Scripts de inicialización (opcional)
+      # - ../init-scripts/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dev_user} -d ${POSTGRES_DB:-dev_database}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    
+    networks:
+      - dev_network
+    
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter_dev
+    hostname: postgres-exporter-dev
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-dev_user}:${POSTGRES_PASSWORD:-dev_pass_123}@postgres:5432/${POSTGRES_DB:-dev_database}?sslmode=disable"
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres-exporter/queries.yaml"
+      PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
+      PG_EXPORTER_DISABLE_SETTINGS_METRICS: "false"
+    
+    ports:
+      - "${EXPORTER_PORT:-9187}:9187"
+    
+    volumes:
+      - ../postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - dev_network
+    
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_dev
+    hostname: prometheus-dev
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-7d}"
+      - "--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-5GB}"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--web.enable-lifecycle"
+      - "--web.enable-admin-api"
+    
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    
+    volumes:
+      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_dev_data:/prometheus
+    
+    depends_on:
+      - postgres-exporter
+    
+    networks:
+      - dev_network
+    
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_dev
+    hostname: grafana-dev
+    environment:
+      # Credenciales admin
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-dev_admin_123}
+      
+      # Configuración de desarrollo
+      GF_USERS_ALLOW_SIGN_UP: "true"
+      GF_USERS_ALLOW_ORG_CREATE: "true"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Viewer"
+      
+      # Paths
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      GF_PATHS_DATA: /var/lib/grafana
+      
+      # Servidor
+      GF_SERVER_HTTP_PORT: "3000"
+      GF_SERVER_DOMAIN: ${GF_SERVER_DOMAIN:-localhost}
+      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost:3000}
+      
+      # Logging
+      GF_LOG_LEVEL: ${GF_LOG_LEVEL:-debug}
+    
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    
+    volumes:
+      - grafana_dev_data:/var/lib/grafana
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+    
+    depends_on:
+      - prometheus
+    
+    networks:
+      - dev_network
+    
+    restart: unless-stopped
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  prometheus_dev_data:
+    driver: local
+  grafana_dev_data:
+    driver: local
+
+networks:
+  dev_network:
+    driver: bridge
+    name: dev_network
+
+# ====================================================================================
+# CONFIGURACIÓN EXPLICADA
+# ====================================================================================
+# 
+# CARACTERÍSTICAS:
+# ✅ Configuración ligera (128MB shared_buffers)
+# ✅ Logging completo para debugging
+# ✅ 20 conexiones máximas
+# ✅ Reinicio automático en caso de fallo
+# ✅ Health checks activos
+# ✅ Retención de datos de 7 días en Prometheus
+# ✅ Acceso anónimo habilitado en Grafana (solo desarrollo)
+# 
+# USO:
+# docker-compose -f templates/development.yml up -d
+# 
+# CON VARIABLES:
+# docker-compose -f templates/development.yml --env-file .env up -d
+# 
+# ACCESO:
+# - PostgreSQL: localhost:5432
+# - Grafana: http://localhost:3000 (admin/dev_admin_123)
+# - Prometheus: http://localhost:9090
+# - Exporter: http://localhost:9187/metrics
+# 
+# ====================================================================================

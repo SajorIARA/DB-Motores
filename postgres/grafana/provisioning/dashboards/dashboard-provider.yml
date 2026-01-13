@@ -1,0 +1,19 @@
+# ====================================================================================
+# CONFIGURACIÓN DE DASHBOARDS PARA GRAFANA
+# ====================================================================================
+# Define dónde Grafana buscará archivos JSON de dashboards
+# ====================================================================================
+
+apiVersion: 1
+
+providers:
+  - name: 'PostgreSQL Dashboards'
+    orgId: 1
+    folder: 'PostgreSQL'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards
+      foldersFromFilesStructure: true

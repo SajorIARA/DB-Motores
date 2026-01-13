@@ -1,0 +1,200 @@
+# ====================================================================================
+# PLANTILLA: TESTING (CI/CD)
+# ====================================================================================
+# Configuración mínima para tests automatizados y CI/CD
+# RAM recomendada: 256MB - 512MB
+# Prioridad: Velocidad de inicio > Persistencia
+# ====================================================================================
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres_test
+    hostname: postgres-test
+    environment:
+      # Credenciales de testing (NO usar en producción)
+      POSTGRES_USER: ${POSTGRES_USER:-test_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-test_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-test_db}
+      
+      # Configuración mínima para testing
+      POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-64MB}
+      POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-256MB}
+      POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-2MB}
+      POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-32MB}
+      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-10}
+      
+      # Optimización para velocidad (NO SEGURO PARA PRODUCCIÓN)
+      POSTGRES_FSYNC: ${POSTGRES_FSYNC:-off}  # ⚠️ Desactiva sincronización de disco
+      POSTGRES_SYNCHRONOUS_COMMIT: ${POSTGRES_SYNCHRONOUS_COMMIT:-off}
+      POSTGRES_FULL_PAGE_WRITES: ${POSTGRES_FULL_PAGE_WRITES:-off}
+      
+      # WAL mínimo
+      POSTGRES_MAX_WAL_SIZE: ${POSTGRES_MAX_WAL_SIZE:-256MB}
+      POSTGRES_CHECKPOINT_TIMEOUT: ${POSTGRES_CHECKPOINT_TIMEOUT:-3min}
+      
+      # Sin logging (performance)
+      POSTGRES_LOG_STATEMENT: ${POSTGRES_LOG_STATEMENT:-none}
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: ${POSTGRES_LOG_MIN_DURATION_STATEMENT:--1}
+    
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    # ⚠️ SIN VOLÚMENES PERSISTENTES - Los datos se pierden al eliminar el contenedor
+    tmpfs:
+      - /var/lib/postgresql/data  # Todo en memoria temporal
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-test_user}"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    
+    networks:
+      - test_network
+    
+    restart: "no"  # No reiniciar automáticamente en testing
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: postgres_exporter_test
+    hostname: postgres-exporter-test
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-test_user}:${POSTGRES_PASSWORD:-test_pass}@postgres:5432/${POSTGRES_DB:-test_db}?sslmode=disable"
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres-exporter/queries.yaml"
+      PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
+    
+    ports:
+      - "${EXPORTER_PORT:-9187}:9187"
+    
+    volumes:
+      - ../postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+    
+    networks:
+      - test_network
+    
+    restart: "no"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_test
+    hostname: prometheus-test
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-1d}"
+      - "--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-1GB}"
+      - "--web.enable-lifecycle"
+    
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    
+    volumes:
+      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    
+    # Sin volumen persistente
+    tmpfs:
+      - /prometheus
+    
+    depends_on:
+      - postgres-exporter
+    
+    networks:
+      - test_network
+    
+    restart: "no"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_test
+    hostname: grafana-test
+    environment:
+      # Credenciales simples para testing
+      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-admin}
+      
+      # Sin restricciones para testing
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: "Admin"
+      GF_AUTH_BASIC_ENABLED: "false"
+      
+      # Paths
+      GF_PATHS_PROVISIONING: /etc/grafana/provisioning
+      
+      # Logging mínimo
+      GF_LOG_LEVEL: ${GF_LOG_LEVEL:-warn}
+    
+    ports:
+      - "${GRAFANA_PORT:-3000}:3000"
+    
+    volumes:
+      - ../grafana/provisioning:/etc/grafana/provisioning:ro
+    
+    # Sin volumen persistente
+    tmpfs:
+      - /var/lib/grafana
+    
+    depends_on:
+      - prometheus
+    
+    networks:
+      - test_network
+    
+    restart: "no"
+
+networks:
+  test_network:
+    driver: bridge
+    name: test_network
+
+# ====================================================================================
+# CONFIGURACIÓN EXPLICADA
+# ====================================================================================
+# 
+# CARACTERÍSTICAS:
+# ✅ Configuración mínima (64MB shared_buffers)
+# ✅ Inicio ultra-rápido (< 5 segundos)
+# ✅ 10 conexiones máximas
+# ✅ FSYNC desactivado (velocidad > seguridad)
+# ✅ Sin volúmenes persistentes (todo en tmpfs/memoria)
+# ✅ Sin reinicio automático
+# ✅ Ideal para CI/CD pipelines
+# 
+# ⚠️ ADVERTENCIAS:
+# ❌ NO usar en producción
+# ❌ Los datos se pierden al eliminar contenedores
+# ❌ FSYNC=off puede causar corrupción de datos
+# ❌ Sin backups automáticos
+# 
+# USO EN CI/CD (GitHub Actions):
+# ```yaml
+# - name: Start PostgreSQL
+#   run: docker-compose -f templates/testing.yml up -d
+# 
+# - name: Wait for PostgreSQL
+#   run: docker-compose -f templates/testing.yml exec -T postgres pg_isready
+# 
+# - name: Run tests
+#   run: npm test
+# 
+# - name: Cleanup
+#   run: docker-compose -f templates/testing.yml down -v
+# ```
+# 
+# USO LOCAL:
+# docker-compose -f templates/testing.yml up -d
+# # Ejecutar tests
+# docker-compose -f templates/testing.yml down -v  # Limpiar todo
+# 
+# ACCESO:
+# - PostgreSQL: localhost:5432 (test_user/test_pass)
+# - Grafana: http://localhost:3000 (acceso anónimo)
+# - Prometheus: http://localhost:9090
+# 
+# ====================================================================================

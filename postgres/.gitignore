@@ -1,0 +1,46 @@
+# Variables de entorno (contienen credenciales)
+.env
+.env.*
+!.env.example
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.crt
+
+# Datos de PostgreSQL (si usas bind mounts)
+postgres-data/
+data/
+pgdata/
+
+# Backups locales
+backups/
+*.sql
+*.dump
+*.backup
+
+# Archivos de configuración con credenciales
+postgresql.conf
+pg_hba.conf
+!postgresql.conf.example
+!pg_hba.conf.example
+
+# Scripts personalizados con datos sensibles
+init-scripts/*.sql
+!init-scripts/*.sql.example
+
+# Logs
+logs/
+*.log
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

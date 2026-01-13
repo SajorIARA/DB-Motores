@@ -1,0 +1,58 @@
+# Variables de entorno (contienen credenciales)
+.env
+.env.*
+!.env.example
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.crt
+
+# Datos de bases de datos
+**/data/
+**/postgres-data/
+**/mysql-data/
+**/mongodb-data/
+**/redis-data/
+pgdata/
+
+# Backups
+backups/
+*.sql
+*.dump
+*.backup
+*.bak
+
+# Logs
+logs/
+*.log
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Docker
+docker-compose.override.yml
+
+# Configuraciones personalizadas
+**/postgresql.conf
+**/pg_hba.conf
+**/my.cnf
+**/mongod.conf
+!**/*.example
+!**/*.conf.example
+
+# Scripts personalizados con datos sensibles
+**/init-scripts/*.sql
+**/init-scripts/*.sh
+!**/init-scripts/*.example

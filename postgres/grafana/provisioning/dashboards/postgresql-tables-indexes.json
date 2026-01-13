@@ -1,0 +1,258 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {"align": "auto", "displayMode": "color-background"},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 1000000},
+              {"color": "red", "value": 10000000}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 0, "y": 0},
+      "id": 1,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Sequential Scans"}]
+      },
+      "targets": [
+        {
+          "expr": "pg_table_stats_sequential_scans",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tablas con Más Sequential Scans (Necesitan Índices)",
+      "transformations": [
+        {"id": "organize", "options": {"excludeByName": {"Time": true, "job": true, "instance": true, "__name__": true}, "renameByName": {"schema_name": "Esquema", "table_name": "Tabla", "Value": "Sequential Scans"}}}
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {"align": "auto", "displayMode": "color-background"},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "green", "value": null},
+              {"color": "yellow", "value": 10},
+              {"color": "red", "value": 20}
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {"h": 10, "w": 12, "x": 12, "y": 0},
+      "id": 2,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Dead Tuple Ratio"}]
+      },
+      "targets": [
+        {
+          "expr": "pg_table_stats_dead_tuple_ratio",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tablas con Más Tuplas Muertas (Necesitan VACUUM)",
+      "transformations": [
+        {"id": "organize", "options": {"excludeByName": {"Time": true, "job": true, "instance": true, "__name__": true}, "renameByName": {"schema_name": "Esquema", "table_name": "Tabla", "Value": "Dead Tuple Ratio (%)"}}}
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisLabel": "Tuplas",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "mappings": [],
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 10},
+      "id": 3,
+      "options": {
+        "legend": {"calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "bottom"},
+        "tooltip": {"mode": "multi"}
+      },
+      "targets": [
+        {
+          "expr": "pg_table_stats_live_tuples",
+          "legendFormat": "Live - {{table_name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "pg_table_stats_dead_tuples",
+          "legendFormat": "Dead - {{table_name}}",
+          "refId": "B"
+        }
+      ],
+      "title": "Tuplas Vivas vs Muertas",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisLabel": "Operations/s",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
+            "gradientMode": "none",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "mappings": [],
+          "unit": "ops"
+        }
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 10},
+      "id": 4,
+      "options": {
+        "legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom"},
+        "tooltip": {"mode": "multi"}
+      },
+      "targets": [
+        {
+          "expr": "rate(pg_table_stats_vacuum_count[5m])",
+          "legendFormat": "VACUUM - {{table_name}}",
+          "refId": "A"
+        },
+        {
+          "expr": "rate(pg_table_stats_autovacuum_count[5m])",
+          "legendFormat": "AUTOVACUUM - {{table_name}}",
+          "refId": "B"
+        },
+        {
+          "expr": "rate(pg_table_stats_analyze_count[5m])",
+          "legendFormat": "ANALYZE - {{table_name}}",
+          "refId": "C"
+        }
+      ],
+      "title": "Actividad de VACUUM y ANALYZE",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {"align": "auto", "displayMode": "auto"},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{"color": "green", "value": null}]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 18},
+      "id": 5,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"desc": true, "displayName": "Total Size"}]
+      },
+      "targets": [
+        {
+          "expr": "pg_table_sizes_total_size_bytes",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Tamaños de Tablas (Top 20)",
+      "transformations": [
+        {"id": "organize", "options": {"excludeByName": {"Time": true, "job": true, "instance": true, "__name__": true}, "renameByName": {"schema_name": "Esquema", "table_name": "Tabla", "total_size_bytes": "Total Size", "table_size_bytes": "Table Size", "indexes_size_bytes": "Indexes Size"}}}
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {"align": "auto", "displayMode": "color-background"},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": null},
+              {"color": "yellow", "value": 1},
+              {"color": "green", "value": 1000}
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 28},
+      "id": 6,
+      "options": {
+        "showHeader": true,
+        "sortBy": [{"desc": false, "displayName": "Index Scans"}]
+      },
+      "targets": [
+        {
+          "expr": "pg_index_stats_index_scans",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Uso de Índices (0 scans = índice no usado, considerar eliminarlo)",
+      "transformations": [
+        {"id": "organize", "options": {"excludeByName": {"Time": true, "job": true, "instance": true, "__name__": true}, "renameByName": {"schema_name": "Esquema", "table_name": "Tabla", "index_name": "Índice", "Value": "Index Scans", "index_size_bytes": "Size (bytes)"}}}
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": ["postgresql", "tables", "indexes"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "PostgreSQL - Tablas e Índices",
+  "uid": "postgresql-tables-indexes",
+  "version": 1
+}

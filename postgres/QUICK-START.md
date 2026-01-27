@@ -24,17 +24,17 @@ Levanta PostgreSQL 17.7 con Prometheus + Grafana en **menos de 5 minutos**.
 # Navegar al directorio postgres
 cd D:\DB-Motores\postgres
 
-# OPCIÓN A: Desarrollo local (128MB shared_buffers)
-docker-compose -f templates/development.yml up -d
+# OPCIÓN A: Desarrollo local (script)
+scripts/start-development.ps1
 
-# OPCIÓN B: Producción (1GB shared_buffers, config files)
-docker-compose -f templates/production.yml up -d
+# OPCIÓN B: Producción (script)
+scripts/start-production.ps1
 
-# OPCIÓN C: Testing/CI-CD (64MB shared_buffers, fsync off)
-docker-compose -f templates/testing.yml up -d
+# OPCIÓN C: Testing/CI-CD (script)
+scripts/start-testing.ps1
 
-# OPCIÓN D: Analytics/BI (1GB shared_buffers, 128MB work_mem)
-docker-compose -f templates/analytics.yml up -d
+# OPCIÓN D: Analytics/BI (script)
+scripts/start-analytics.ps1
 ```
 
 ### 2️⃣ Esperar a que inicien (10-30 segundos)

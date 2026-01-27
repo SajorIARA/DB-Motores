@@ -1,4 +1,10 @@
+
 # 🐘 PostgreSQL 17 + Prometheus + Grafana - Stack Completo de Monitoreo
+
+> **Organización del proyecto:**
+> - **Documentación esencial:** en la raíz de `postgres/` (este archivo, QUICK-START.md, STRUCTURE.md)
+> - **Scripts PowerShell:** en `scripts/` para iniciar y gestionar ambientes
+> - **Documentación avanzada y troubleshooting:** en `docs/`
 
 Sistema completo de PostgreSQL 17 con monitoreo avanzado mediante Prometheus y visualización en Grafana. Incluye **4 modalidades pre-configuradas** (Development, Testing, Production, Analytics) con **6 dashboards profesionales** y **scripts de inicio automatizados**.
 
@@ -46,11 +52,12 @@ Sistema completo de PostgreSQL 17 con monitoreo avanzado mediante Prometheus y v
 
 ## 🚀 Inicio Rápido (2 Formas)
 
+
 ### Opción 1: Script Interactivo (Recomendado)
 
 ```powershell
 # Ejecutar el gestor interactivo
-.\postgres-manager.ps1
+scripts/postgres-manager.ps1
 ```
 
 El script te permite:
@@ -63,16 +70,16 @@ El script te permite:
 
 ```powershell
 # Development
-.\start-development.ps1
+scripts/start-development.ps1
 
 # Testing
-.\start-testing.ps1
+scripts/start-testing.ps1
 
 # Production
-.\start-production.ps1
+scripts/start-production.ps1
 
 # Analytics
-.\start-analytics.ps1
+scripts/start-analytics.ps1
 ```
 
 ### Opción 3: Docker Compose Manual
@@ -148,52 +155,66 @@ Tablas más grandes, índices no usados, scans secuenciales vs índices, dead tu
 
 ## 📁 Estructura del Proyecto
 
+
 ```
 postgres/
 ├── 📄 README.md                        # Este archivo - Documentación principal
 ├── 📄 QUICK-START.md                   # Guía rápida de inicio
 ├── 📄 STRUCTURE.md                     # Documentación técnica detallada
-├── 📄 METRICAS-DISPONIBLES.md          # Catálogo de 350+ métricas
+├── 📂 scripts/                         # Scripts PowerShell para gestión de ambientes
+│   ├── postgres-manager.ps1            # Script maestro interactivo
+│   ├── start-development.ps1           # Iniciar ambiente Development
+│   ├── start-testing.ps1               # Iniciar ambiente Testing
+│   ├── start-production.ps1            # Iniciar ambiente Production
+│   └── start-analytics.ps1             # Iniciar ambiente Analytics
 │
 ├── 📂 templates/                       # ⭐ PLANTILLAS PRE-CONFIGURADAS
-│   ├── 📄 README.md                    # Comparativa de plantillas
-│   ├── 📄 .env                         # Variables de entorno (NO commitear)
-│   ├── 📄 .env.example                 # Ejemplo de configuración
-│   ├── 📄 development.yml              # Desarrollo local (128MB shared_buffers)
-│   ├── 📄 production.yml               # Producción (1GB shared_buffers)
-│   ├── 📄 testing.yml                  # CI/CD (64MB, sin persistencia)
-│   └── 📄 analytics.yml                # Analytics (1GB, 128MB work_mem)
+│   ├── README.md                       # Comparativa de plantillas
+│   ├── .env                            # Variables de entorno (NO commitear)
+│   ├── .env.example                    # Ejemplo de configuración
+│   ├── development.yml                 # Desarrollo local (128MB shared_buffers)
+│   ├── production.yml                  # Producción (1GB shared_buffers)
+│   ├── testing.yml                     # CI/CD (64MB, sin persistencia)
+│   └── analytics.yml                   # Analytics (1GB, 128MB work_mem)
 │
 ├── 📂 grafana/                         # Configuración de Grafana
-│   ├── 📄 README.md                    # Guía de uso de dashboards
-│   └── 📂 provisioning/
-│       ├── 📂 datasources/             # Auto-configuración de Prometheus
+│   ├── README.md                       # Guía de uso de dashboards
+│   └── provisioning/
+│       ├── datasources/                 # Auto-configuración de Prometheus
 │       │   └── prometheus-datasource.yml
-│       └── 📂 dashboards/              # 5 dashboards funcionales
+│       └── dashboards/                 # 6 dashboards funcionales
 │           ├── dashboard-provider.yml
 │           ├── postgresql-overview.json
 │           ├── postgresql-config.json
 │           ├── postgresql-performance-io.json
 │           ├── postgresql-queries-locks.json
-│           └── postgresql-tables-indexes.json
+│           ├── postgresql-tables-indexes.json
+│           └── postgresql-checkpoints.json
 │
 ├── 📂 config/                          # Configuración de PostgreSQL
-│   ├── 📄 README.md                    # Guía de configuración
-│   ├── 📄 postgresql.conf              # Config actual (production)
-│   ├── 📄 pg_hba.conf                  # Autenticación (production)
-│   ├── 📄 postgresql.conf.example      # Template con documentación
-│   └── 📄 pg_hba.conf.example          # Template de autenticación
+│   ├── README.md                       # Guía de configuración
+│   ├── postgresql.conf                 # Config actual (production)
+│   ├── pg_hba.conf                     # Autenticación (production)
+│   ├── postgresql.conf.example         # Template con documentación
+│   └── pg_hba.conf.example             # Template de autenticación
 │
 ├── 📂 init-scripts/                    # Scripts de inicialización SQL
-│   ├── 📄 README.md
-│   ├── 00-create-exporter-user.sql     # Usuario para postgres_exporter
+│   ├── README.md
+│   ├── 00-create-exporter-user.sql      # Usuario para postgres_exporter
 │   ├── 01-init.sql.example             # Schemas y tablas iniciales
 │   ├── 02-functions.sql.example        # Funciones personalizadas
 │   └── 03-setup.sh.example             # Script de setup automatizado
 │
-├── 📄 postgres-queries-safe.yaml       # ⭐ Custom queries (PostgreSQL 17)
-├── 📄 prometheus.yml                   # Configuración de Prometheus
-└── 📄 .gitignore                       # Ignorar .env, data/, logs/
+├── 📂 docs/                            # Documentación avanzada y troubleshooting
+│   ├── README.md                       # Este archivo: índice de docs/
+│   ├── VERIFICACION.md                 # Checklist de verificación
+│   ├── METRICAS-DISPONIBLES.md         # Catálogo de métricas
+│   ├── CONFIGURACION-VOLUMENES.md      # Detalles de volúmenes
+│   └── SOLUCION-AMBIENTES.md           # Troubleshooting ambientes
+│
+├── postgres-queries-safe.yaml          # ⭐ Custom queries (PostgreSQL 17)
+├── prometheus.yml                      # Configuración de Prometheus
+└── .gitignore                          # Ignorar .env, data/, logs/
 ```
 
 Ver [STRUCTURE.md](STRUCTURE.md) para documentación técnica completa.

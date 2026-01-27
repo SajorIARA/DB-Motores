@@ -1,17 +1,16 @@
-# 📚 Documentación Adicional
 
-Esta carpeta contiene documentación de desarrollo y referencia que puede ser útil para entender el proceso de construcción del proyecto, pero no es necesaria para el uso diario.
+# 📚 Documentación Adicional y Avanzada
 
-## Archivos de Referencia
+Esta carpeta contiene documentación de referencia, troubleshooting y detalles técnicos avanzados. **No es necesaria para el uso diario**: la operación normal se cubre con los archivos de la raíz.
 
+## ¿Cuándo consultar cada archivo?
 
-### 📋 Proceso de Desarrollo
-**VERIFICACION.md** - Checklist de verificación post-implementación
-
-### 🔧 Guías Técnicas Detalladas
-**METRICAS-DISPONIBLES.md** - Catálogo completo de métricas de Prometheus
-**CONFIGURACION-VOLUMENES.md** - Detalles específicos de configuración de volúmenes Docker
-**SOLUCION-AMBIENTES.md** - Soluciones específicas por ambiente
+| Archivo                        | ¿Para qué sirve?                                      |
+|--------------------------------|-------------------------------------------------------|
+| VERIFICACION.md                | Checklist para validar que todo funciona correctamente |
+| METRICAS-DISPONIBLES.md        | Catálogo completo de métricas Prometheus/Postgres      |
+| CONFIGURACION-VOLUMENES.md     | Detalles de volúmenes y persistencia por ambiente      |
+| SOLUCION-AMBIENTES.md          | Troubleshooting de ambientes y dashboards              |
 
 ## 📖 Documentación Principal (Raíz del proyecto)
 
@@ -23,4 +22,4 @@ Para uso diario, consulta los archivos en la carpeta raíz `postgres/`:
 
 ## 💡 Nota
 
-Los archivos en esta carpeta `docs/` son principalmente históricos y de referencia. Toda la información esencial está consolidada en los 3 archivos principales mencionados arriba.
+Los archivos en esta carpeta `docs/` son principalmente históricos y de referencia avanzada. Toda la información esencial está consolidada en los 3 archivos principales mencionados arriba.

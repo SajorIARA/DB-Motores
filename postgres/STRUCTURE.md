@@ -8,21 +8,28 @@ postgres/
 ├── 📄 STRUCTURE.md                       # Este archivo - Arquitectura del proyecto
 ├── 📄 .gitignore                         # Ignorar .env y datos locales
 │
+├── 📂 scripts/                           # Scripts PowerShell para gestión de ambientes
+│   ├── postgres-manager.ps1              # Script maestro interactivo
+│   ├── start-development.ps1             # Iniciar ambiente Development
+│   ├── start-testing.ps1                 # Iniciar ambiente Testing
+│   ├── start-production.ps1              # Iniciar ambiente Production
+│   └── start-analytics.ps1               # Iniciar ambiente Analytics
+│
 ├── 📂 templates/                         # ⭐ PLANTILLAS DOCKER COMPOSE
-│   ├── 📄 README.md                      # Documentación completa de plantillas
-│   ├── 📄 .env.example                   # Ejemplo de variables de entorno
-│   ├── 📄 development.yml                # Desarrollo local (128MB shared_buffers)
-│   ├── 📄 production.yml                 # Producción (1GB shared_buffers + config files)
-│   ├── 📄 testing.yml                    # CI/CD y testing (64MB shared_buffers, fsync off)
-│   ├── 📄 analytics.yml                  # Data warehouse (1GB + 128MB work_mem)
-│   └── 📄 activity-10min.ps1             # 🔄 Generador de actividad para testing
+│   ├── README.md                         # Documentación completa de plantillas
+│   ├── .env.example                      # Ejemplo de variables de entorno
+│   ├── development.yml                   # Desarrollo local (128MB shared_buffers)
+│   ├── production.yml                    # Producción (1GB shared_buffers + config files)
+│   ├── testing.yml                       # CI/CD y testing (64MB shared_buffers, fsync off)
+│   ├── analytics.yml                     # Data warehouse (1GB + 128MB work_mem)
+│   └── activity-10min.ps1                # ♻️ Generador de actividad para testing
 │
 ├── 📂 grafana/                           # Configuración de Grafana
-│   ├── 📄 README.md                      # Guía de dashboards
-│   └── 📂 provisioning/
-│       ├── 📂 datasources/
+│   ├── README.md                         # Guía de dashboards
+│   └── provisioning/
+│       ├── datasources/
 │       │   └── prometheus-datasource.yml # Auto-configuración de Prometheus
-│       └── 📂 dashboards/
+│       └── dashboards/
 │           ├── dashboard-provider.yml
 │           ├── postgresql-overview.json           # Dashboard 1: Vista General
 │           ├── postgresql-config.json             # Dashboard 2: Configuración
@@ -32,24 +39,31 @@ postgres/
 │           └── postgresql-checkpoints.json        # Dashboard 6: Checkpoints (PG 17)
 │
 ├── 📂 config/                            # ⭐ CONFIGURACIÓN CENTRALIZADA
-│   ├── 📄 README.md                      # Documentación de configuración
-│   ├── 📂 prometheus/                    # Configs de Prometheus por entorno
-│   ├── 📄 postgres-queries.yaml          # Custom queries para postgres_exporter (351 líneas)
-│   ├── 📄 pg_hba.conf.example            # Ejemplo de control de acceso
-│   ├── 📄 pg_hba.conf                    # Control de acceso (usado por production)
-│   ├── 📄 postgresql.conf.example        # Ejemplo de configuración completa
-│   └── 📄 postgresql.conf                # Configuración completa (usado por production)
+│   ├── README.md                         # Documentación de configuración
+│   ├── prometheus/                       # Configs de Prometheus por entorno
+│   ├── postgres-queries.yaml             # Custom queries para postgres_exporter (351 líneas)
+│   ├── pg_hba.conf.example               # Ejemplo de control de acceso
+│   ├── pg_hba.conf                       # Control de acceso (usado por production)
+│   ├── postgresql.conf.example           # Ejemplo de configuración completa
+│   └── postgresql.conf                   # Configuración completa (usado por production)
 │
 ├── 📂 init-scripts/                      # Scripts SQL de inicialización
-│   ├── 📄 README.md                      # Guía de scripts de inicio
-│   ├── 📄 00-create-exporter-user.sql    # Crear usuario para postgres_exporter
-│   ├── 📄 01-init.sql.example            # Ejemplo: Crear esquemas y tablas
-│   ├── 📄 02-functions.sql.example       # Ejemplo: Funciones y triggers
-│   └── 📄 03-setup.sh.example            # Ejemplo: Script bash de setup
+│   ├── README.md                         # Guía de scripts de inicio
+│   ├── 00-create-exporter-user.sql       # Crear usuario para postgres_exporter
+│   ├── 01-init.sql.example              # Ejemplo: Crear esquemas y tablas
+│   ├── 02-functions.sql.example         # Ejemplo: Funciones y triggers
+│   └── 03-setup.sh.example              # Ejemplo: Script bash de setup
 │
-└── 📄 postgres-queries.yaml              # (Deprecated - movido a config/)
-    📄 prometheus.yml                     # (Deprecated - movido a config/)
-
+├── 📂 docs/                              # Documentación avanzada y troubleshooting
+│   ├── README.md                         # Índice de docs/
+│   ├── VERIFICACION.md                   # Checklist de verificación
+│   ├── METRICAS-DISPONIBLES.md           # Catálogo de métricas
+│   ├── CONFIGURACION-VOLUMENES.md        # Detalles de volúmenes
+│   └── SOLUCION-AMBIENTES.md             # Troubleshooting ambientes
+│
+└── postgres-queries.yaml                # (Deprecated - movido a config/)
+   prometheus.yml                       # (Deprecated - movido a config/)
+```
 ```
 
 ---

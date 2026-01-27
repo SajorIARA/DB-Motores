@@ -4,16 +4,14 @@ Esta carpeta contiene documentación de desarrollo y referencia que puede ser ú
 
 ## Archivos de Referencia
 
+
 ### 📋 Proceso de Desarrollo
-- **COMPLETADO.md** - Checklist de tareas completadas durante el desarrollo
-- **RESUMEN.md** - Resumen ejecutivo del proyecto (redundante con README.md)
-- **VERIFICACION.md** - Checklist de verificación post-implementación
+**VERIFICACION.md** - Checklist de verificación post-implementación
 
 ### 🔧 Guías Técnicas Detalladas
-- **GUIA-COMPLETA.md** - Tutorial paso a paso (información consolidada en QUICK-START.md)
-- **METRICAS-DISPONIBLES.md** - Catálogo completo de métricas de Prometheus
-- **CONFIGURACION-VOLUMENES.md** - Detalles específicos de configuración de volúmenes Docker
-- **SOLUCION-AMBIENTES.md** - Soluciones específicas por ambiente
+**METRICAS-DISPONIBLES.md** - Catálogo completo de métricas de Prometheus
+**CONFIGURACION-VOLUMENES.md** - Detalles específicos de configuración de volúmenes Docker
+**SOLUCION-AMBIENTES.md** - Soluciones específicas por ambiente
 
 ## 📖 Documentación Principal (Raíz del proyecto)
 

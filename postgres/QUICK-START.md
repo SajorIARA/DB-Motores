@@ -1,10 +1,55 @@
+
 # 🚀 PostgreSQL + Monitoreo - Guía de Inicio Rápido
 
 Levanta PostgreSQL con Prometheus y Grafana en **menos de 5 minutos**.
 
-# 🚀 PostgreSQL 17.7 Alpine + Monitoreo - Guía de Inicio Rápido
+---
 
-Levanta PostgreSQL 17.7 con Prometheus + Grafana en **menos de 5 minutos**.
+## Métodos de inicio rápido
+
+Puedes iniciar los ambientes de dos formas:
+
+### 1️⃣ Usando scripts PowerShell (recomendado)
+
+Abre una terminal PowerShell en la carpeta `postgres/` y ejecuta:
+
+```powershell
+# Menú interactivo para elegir ambiente
+scripts\postgres-manager.ps1
+
+# O scripts individuales:
+scripts\start-development.ps1
+scripts\start-testing.ps1
+scripts\start-production.ps1
+scripts\start-analytics.ps1
+```
+
+**Ventajas:**
+- No necesitas recordar comandos largos
+- Mensajes claros de estado y errores
+- El script maestro permite gestionar todos los ambientes desde un solo menú
+
+### 2️⃣ Comandos Docker Compose manuales
+
+Abre una terminal y navega a la carpeta `postgres/`:
+
+```powershell
+cd D:\DB-Motores\postgres
+
+# OPCIÓN A: Desarrollo local
+docker-compose -f templates/development.yml up -d
+
+# OPCIÓN B: Producción
+docker-compose -f templates/production.yml up -d
+
+# OPCIÓN C: Testing/CI-CD
+docker-compose -f templates/testing.yml up -d
+
+# OPCIÓN D: Analytics/BI
+docker-compose -f templates/analytics.yml up -d
+```
+
+---
 
 ---
 

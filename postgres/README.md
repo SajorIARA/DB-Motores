@@ -50,6 +50,36 @@ Sistema completo de PostgreSQL 17 con monitoreo avanzado mediante Prometheus y v
 
 ---
 
+
+## 🚀 ¿Cómo se usan los scripts PowerShell?
+
+En la carpeta `scripts/` tienes utilidades PowerShell para iniciar y gestionar los ambientes PostgreSQL de forma sencilla:
+
+| Script                        | ¿Qué hace?                                                        |
+|-------------------------------|-------------------------------------------------------------------|
+| postgres-manager.ps1          | Script maestro interactivo: menú visual para gestionar ambientes  |
+| start-development.ps1         | Inicia el ambiente Development (desarrollo local)                 |
+| start-testing.ps1             | Inicia el ambiente Testing (CI/CD)                                |
+| start-production.ps1          | Inicia el ambiente Production (alta carga, persistencia real)     |
+| start-analytics.ps1           | Inicia el ambiente Analytics (BI, queries complejas)              |
+
+### ¿Cómo ejecutarlos?
+
+1. Abre una terminal PowerShell en la carpeta `postgres/`.
+2. Ejecuta el script deseado, por ejemplo:
+	- `scripts\start-development.ps1`
+	- `scripts\start-production.ps1`
+	- O usa el menú interactivo: `scripts\postgres-manager.ps1`
+
+**Ventajas:**
+- No necesitas recordar comandos largos ni rutas.
+- Los scripts muestran mensajes de estado y errores.
+- El script maestro permite gestionar todos los ambientes desde un solo menú.
+
+**Requisito:** Tener PowerShell y Docker instalados.
+
+---
+
 ## 🚀 Inicio Rápido (2 Formas)
 
 

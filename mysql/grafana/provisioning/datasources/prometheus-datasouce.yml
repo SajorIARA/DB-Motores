@@ -1,10 +1,7 @@
 # ====================================================================================
 # DATASOURCE DE PROMETHEUS PARA GRAFANA
 # ====================================================================================
-# yaml-language-server: disable
-# ====================================================================================
 # Este archivo configura automáticamente Prometheus como fuente de datos en Grafana
-# No necesitas configurar nada manualmente en la UI
 # ====================================================================================
 
 apiVersion: 1
@@ -13,17 +10,11 @@ datasources:
   - name: Prometheus
     type: prometheus
     access: proxy
-    uid: prometheus
     url: http://prometheus:9090
+    uid: prometheus
     isDefault: true
     editable: false
-    jsonData:
-      # Timeout de queries
-      timeInterval: 10s
-      # Método HTTP
-      httpMethod: POST
-      # Mantener cookies
-      keepCookies: []
-      # Usar cache del navegador
-      cacheLevel: 'High'
     version: 1
+    jsonData:
+      timeInterval: 10s
+      httpMethod: POST

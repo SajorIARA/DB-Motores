@@ -23,7 +23,7 @@
                                                                           "mode":  "palette-classic"
                                                                       },
                                                             "custom":  {
-                                                                           "axisLabel":  "Tuplas/s",
+                                                                           "axisLabel":  "Checkpoints",
                                                                            "axisPlacement":  "auto",
                                                                            "barAlignment":  0,
                                                                            "drawStyle":  "line",
@@ -37,7 +37,7 @@
                                                             "mappings":  [
 
                                                                          ],
-                                                            "unit":  "ops"
+                                                            "unit":  "short"
                                                         }
                                        },
                        "gridPos":  {
@@ -50,7 +50,8 @@
                        "options":  {
                                        "legend":  {
                                                       "calcs":  [
-                                                                    "lastNotNull"
+                                                                    "lastNotNull",
+                                                                    "max"
                                                                 ],
                                                       "displayMode":  "table",
                                                       "placement":  "bottom"
@@ -61,23 +62,19 @@
                                    },
                        "targets":  [
                                        {
-                                           "expr":  "rate(pg_stat_database_tup_inserted{datname=\"$database\"}[1m])",
-                                           "legendFormat":  "Inserts/s",
+                                           "expr":  "rate(pg_checkpointer_checkpoints_scheduled[5m])",
+                                           "legendFormat":  "Scheduled (tiempo)",
                                            "refId":  "A"
                                        },
                                        {
-                                           "expr":  "rate(pg_stat_database_tup_updated{datname=\"$database\"}[1m])",
-                                           "legendFormat":  "Updates/s",
+                                           "expr":  "rate(pg_checkpointer_checkpoints_requested[5m])",
+                                           "legendFormat":  "Requested (carga) š ï¸",
                                            "refId":  "B"
-                                       },
-                                       {
-                                           "expr":  "rate(pg_stat_database_tup_deleted{datname=\"$database\"}[1m])",
-                                           "legendFormat":  "Deletes/s",
-                                           "refId":  "C"
                                        }
                                    ],
-                       "title":  "Operaciones DML por Segundo",
-                       "type":  "timeseries"
+                       "title":  "Checkpoint Rate",
+                       "type":  "timeseries",
+                       "description":  "Scheduled = por timeout (normal). Requested = por carga (alerta si alto)"
                    },
                    {
                        "datasource":  {
@@ -90,7 +87,7 @@
                                                                           "mode":  "palette-classic"
                                                                       },
                                                             "custom":  {
-                                                                           "axisLabel":  "Tuplas/s",
+                                                                           "axisLabel":  "ms",
                                                                            "axisPlacement":  "auto",
                                                                            "barAlignment":  0,
                                                                            "drawStyle":  "line",
@@ -104,7 +101,7 @@
                                                             "mappings":  [
 
                                                                          ],
-                                                            "unit":  "ops"
+                                                            "unit":  "ms"
                                                         }
                                        },
                        "gridPos":  {
@@ -117,7 +114,8 @@
                        "options":  {
                                        "legend":  {
                                                       "calcs":  [
-                                                                    "lastNotNull"
+                                                                    "lastNotNull",
+                                                                    "max"
                                                                 ],
                                                       "displayMode":  "table",
                                                       "placement":  "bottom"
@@ -128,18 +126,205 @@
                                    },
                        "targets":  [
                                        {
-                                           "expr":  "rate(pg_stat_database_tup_returned{datname=\"$database\"}[1m])",
-                                           "legendFormat":  "Returned (scans)/s",
+                                           "expr":  "rate(pg_checkpointer_write_time_ms[5m])",
+                                           "legendFormat":  "Write Time",
                                            "refId":  "A"
                                        },
                                        {
-                                           "expr":  "rate(pg_stat_database_tup_fetched{datname=\"$database\"}[1m])",
-                                           "legendFormat":  "Fetched (Index Scan)",
+                                           "expr":  "rate(pg_checkpointer_sync_time_ms[5m])",
+                                           "legendFormat":  "Sync Time",
                                            "refId":  "B"
                                        }
                                    ],
-                       "title":  "Lectura de Tuplas",
-                       "type":  "timeseries"
+                       "title":  "Checkpoint Timing",
+                       "type":  "timeseries",
+                       "description":  "Tiempo gastado escribiendo y sincronizando checkpoints"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "prometheus",
+                                          "uid":  "prometheus"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "yellow",
+                                                                                                 "value":  10
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  50
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "short"
+                                                        }
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  0,
+                                       "y":  8
+                                   },
+                       "id":  3,
+                       "options":  {
+                                       "colorMode":  "value",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "auto",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "auto"
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "pg_checkpointer_checkpoints_scheduled",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "title":  "Total Checkpoints Scheduled",
+                       "type":  "stat"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "prometheus",
+                                          "uid":  "prometheus"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "yellow",
+                                                                                                 "value":  5
+                                                                                             },
+                                                                                             {
+                                                                                                 "color":  "red",
+                                                                                                 "value":  20
+                                                                                             }
+                                                                                         ]
+                                                                           },
+                                                            "unit":  "short"
+                                                        }
+                                       },
+                       "gridPos":  {
+                                       "h":  4,
+                                       "w":  6,
+                                       "x":  6,
+                                       "y":  8
+                                   },
+                       "id":  4,
+                       "options":  {
+                                       "colorMode":  "value",
+                                       "graphMode":  "area",
+                                       "justifyMode":  "auto",
+                                       "orientation":  "auto",
+                                       "reduceOptions":  {
+                                                             "calcs":  [
+                                                                           "lastNotNull"
+                                                                       ],
+                                                             "fields":  "",
+                                                             "values":  false
+                                                         },
+                                       "textMode":  "auto"
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "pg_checkpointer_checkpoints_requested",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "title":  "Total Checkpoints Requested by Load",
+                       "type":  "stat",
+                       "description":  "Valor alto indica que checkpoint_timeout es muy bajo o max_wal_size muy pequeño"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "prometheus",
+                                          "uid":  "prometheus"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Buffers",
+                                                                           "axisPlacement":  "auto",
+                                                                           "barAlignment":  0,
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  20,
+                                                                           "gradientMode":  "none",
+                                                                           "lineWidth":  2,
+                                                                           "pointSize":  5,
+                                                                           "showPoints":  "never",
+                                                                           "spanNulls":  true
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "unit":  "short"
+                                                        }
+                                       },
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  8
+                                   },
+                       "id":  5,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+                                                                    "lastNotNull",
+                                                                    "mean"
+                                                                ],
+                                                      "displayMode":  "table",
+                                                      "placement":  "bottom"
+                                                  },
+                                       "tooltip":  {
+                                                       "mode":  "multi"
+                                                   }
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "rate(pg_checkpointer_buffers_written[5m])",
+                                           "legendFormat":  "Buffers Written",
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "title":  "Buffers Written by Checkpointer",
+                       "type":  "timeseries",
+                       "description":  "Buffers escritos a disco durante checkpoints"
                    },
                    {
                        "datasource":  {
@@ -165,11 +350,11 @@
                                                                                              },
                                                                                              {
                                                                                                  "color":  "yellow",
-                                                                                                 "value":  90
+                                                                                                 "value":  50
                                                                                              },
                                                                                              {
                                                                                                  "color":  "green",
-                                                                                                 "value":  95
+                                                                                                 "value":  90
                                                                                              }
                                                                                          ]
                                                                            },
@@ -177,12 +362,12 @@
                                                         }
                                        },
                        "gridPos":  {
-                                       "h":  6,
-                                       "w":  6,
+                                       "h":  8,
+                                       "w":  12,
                                        "x":  0,
-                                       "y":  8
+                                       "y":  12
                                    },
-                       "id":  3,
+                       "id":  6,
                        "options":  {
                                        "orientation":  "auto",
                                        "reduceOptions":  {
@@ -197,257 +382,37 @@
                                    },
                        "targets":  [
                                        {
-                                           "expr":  "(sum(rate(pg_stat_database_blks_hit{datname=\"$database\"}[1m])) / (sum(rate(pg_stat_database_blks_hit{datname=\"$database\"}[1m])) + sum(rate(pg_stat_database_blks_read{datname=\"$database\"}[1m])))) * 100",
+                                           "expr":  "(pg_checkpointer_checkpoints_scheduled / (pg_checkpointer_checkpoints_scheduled + pg_checkpointer_checkpoints_requested)) * 100",
                                            "refId":  "A"
                                        }
                                    ],
-                       "title":  "Cache Hit Ratio",
-                       "type":  "gauge"
-                   },
-                   {
-                       "datasource":  {
-                                          "type":  "prometheus",
-                                          "uid":  "prometheus"
-                                      },
-                       "fieldConfig":  {
-                                           "defaults":  {
-                                                            "color":  {
-                                                                          "mode":  "thresholds"
-                                                                      },
-                                                            "mappings":  [
-
-                                                                         ],
-                                                            "thresholds":  {
-                                                                               "mode":  "absolute",
-                                                                               "steps":  [
-                                                                                             {
-                                                                                                 "color":  "green",
-                                                                                                 "value":  null
-                                                                                             },
-                                                                                             {
-                                                                                                 "color":  "yellow",
-                                                                                                 "value":  1000
-                                                                                             },
-                                                                                             {
-                                                                                                 "color":  "red",
-                                                                                                 "value":  10000
-                                                                                             }
-                                                                                         ]
-                                                                           },
-                                                            "unit":  "bytes"
-                                                        }
-                                       },
-                       "gridPos":  {
-                                       "h":  6,
-                                       "w":  6,
-                                       "x":  6,
-                                       "y":  8
-                                   },
-                       "id":  4,
-                       "options":  {
-                                       "colorMode":  "value",
-                                       "graphMode":  "area",
-                                       "justifyMode":  "auto",
-                                       "orientation":  "auto",
-                                       "reduceOptions":  {
-                                                             "calcs":  [
-                                                                           "lastNotNull"
-                                                                       ],
-                                                             "fields":  "",
-                                                             "values":  false
-                                                         },
-                                       "textMode":  "auto"
-                                   },
-                       "targets":  [
-                                       {
-                                           "expr":  "pg_stat_database_temp_bytes{datname=\"$database\"}",
-                                           "refId":  "A"
-                                       }
-                                   ],
-                       "title":  "Archivos Temporales (Bytes Total)",
-                       "type":  "stat"
-                   },
-                   {
-                       "datasource":  {
-                                          "type":  "prometheus",
-                                          "uid":  "prometheus"
-                                      },
-                       "fieldConfig":  {
-                                           "defaults":  {
-                                                            "color":  {
-                                                                          "mode":  "thresholds"
-                                                                      },
-                                                            "mappings":  [
-
-                                                                         ],
-                                                            "thresholds":  {
-                                                                               "mode":  "absolute",
-                                                                               "steps":  [
-                                                                                             {
-                                                                                                 "color":  "green",
-                                                                                                 "value":  null
-                                                                                             },
-                                                                                             {
-                                                                                                 "color":  "yellow",
-                                                                                                 "value":  1
-                                                                                             },
-                                                                                             {
-                                                                                                 "color":  "red",
-                                                                                                 "value":  10
-                                                                                             }
-                                                                                         ]
-                                                                           },
-                                                            "unit":  "short"
-                                                        }
-                                       },
-                       "gridPos":  {
-                                       "h":  6,
-                                       "w":  6,
-                                       "x":  12,
-                                       "y":  8
-                                   },
-                       "id":  5,
-                       "options":  {
-                                       "colorMode":  "value",
-                                       "graphMode":  "area",
-                                       "justifyMode":  "auto",
-                                       "orientation":  "auto",
-                                       "reduceOptions":  {
-                                                             "calcs":  [
-                                                                           "lastNotNull"
-                                                                       ],
-                                                             "fields":  "",
-                                                             "values":  false
-                                                         },
-                                       "textMode":  "auto"
-                                   },
-                       "targets":  [
-                                       {
-                                           "expr":  "pg_stat_database_temp_files{datname=\"$database\"}",
-                                           "refId":  "A"
-                                       }
-                                   ],
-                       "title":  "Archivos Temporales (Count)",
-                       "type":  "stat"
-                   },
-                   {
-                       "datasource":  {
-                                          "type":  "prometheus",
-                                          "uid":  "prometheus"
-                                      },
-                       "fieldConfig":  {
-                                           "defaults":  {
-                                                            "color":  {
-                                                                          "mode":  "thresholds"
-                                                                      },
-                                                            "mappings":  [
-
-                                                                         ],
-                                                            "thresholds":  {
-                                                                               "mode":  "absolute",
-                                                                               "steps":  [
-                                                                                             {
-                                                                                                 "color":  "green",
-                                                                                                 "value":  null
-                                                                                             },
-                                                                                             {
-                                                                                                 "color":  "red",
-                                                                                                 "value":  1
-                                                                                             }
-                                                                                         ]
-                                                                           },
-                                                            "unit":  "short"
-                                                        }
-                                       },
-                       "gridPos":  {
-                                       "h":  6,
-                                       "w":  6,
-                                       "x":  18,
-                                       "y":  8
-                                   },
-                       "id":  6,
-                       "options":  {
-                                       "colorMode":  "value",
-                                       "graphMode":  "area",
-                                       "justifyMode":  "auto",
-                                       "orientation":  "auto",
-                                       "reduceOptions":  {
-                                                             "calcs":  [
-                                                                           "lastNotNull"
-                                                                       ],
-                                                             "fields":  "",
-                                                             "values":  false
-                                                         },
-                                       "textMode":  "auto"
-                                   },
-                       "targets":  [
-                                       {
-                                           "expr":  "pg_stat_database_deadlocks{datname=\"$database\"}",
-                                           "refId":  "A"
-                                       }
-                                   ],
-                       "title":  "Deadlocks Total",
-                       "type":  "stat"
+                       "title":  "Checkpoint Efficiency",
+                       "type":  "gauge",
+                       "description":  "% de checkpoints por tiempo vs por carga. \u003e90% es Optimo (significa que la configuración es adecuada)"
                    }
                ],
-    "refresh":  "10s",
+    "refresh":  "30s",
     "schemaVersion":  27,
     "style":  "dark",
     "tags":  [
                  "postgresql",
-                 "tables",
+                 "checkpoints",
                  "performance"
              ],
     "templating":  {
                        "list":  [
-                                    {
-                                        "allValue":  null,
-                                        "current":  {
-                                                            "selected":  false,
-                                                            "text":  "dev_database",
-                                                            "value":  "dev_database"
-                                                    },
-                                        "datasource":  {
-                                                            "type":  "prometheus",
-                                                            "uid":  "prometheus"
-                                                        },
-                                        "definition":  "label_values(pg_stat_database_numbackends, datname)",
-                                        "hide":  0,
-                                        "includeAll":  false,
-                                        "label":  "Database",
-                                        "multi":  false,
-                                        "name":  "database",
-                                        "options":  [
-                                                            {
-                                                                "selected":  true,
-                                                                "text":  "dev_database",
-                                                                "value":  "dev_database"
-                                                            }
-                                                    ],
-                                        "query":  "label_values(pg_stat_database_numbackends, datname)",
-                                        "refresh":  1,
-                                        "regex":  "/^(?!template0|template1|postgres$).*/",
-                                        "skipUrlSync":  false,
-                                        "sort":  1,
-                                        "tagValuesQuery":  "",
-                                        "tags":  [
 
-                                                 ],
-                                        "tagsQuery":  "",
-                                        "type":  "query",
-                                        "useTags":  false
-                                    }
                                 ]
                    },
     "time":  {
-                 "from":  "now-15m",
+                 "from":  "now-1h",
                  "to":  "now"
              },
     "timepicker":  {
 
                    },
     "timezone":  "browser",
-    "title":  "PostgreSQL - Tablas e Índices",
-    "uid":  "postgresql-tables-indexes",
+    "title":  "PostgreSQL - Checkpoints",
+    "uid":  "postgresql-checkpoints",
     "version":  1
 }

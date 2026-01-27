@@ -1,0 +1,86 @@
+-- ====================================================================================
+-- SCRIPT DE INICIALIZACIÓN - ESTRUCTURA Y DATOS
+-- ====================================================================================
+-- Este script se ejecuta automáticamente al crear el contenedor MySQL
+-- Solo se ejecuta si el volumen de datos está vacío
+-- ====================================================================================
+
+-- Usar la base de datos especificada en MYSQL_DATABASE
+USE `${MYSQL_DATABASE}`;
+
+-- ====================================================================================
+-- TABLAS
+-- ====================================================================================
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    full_name VARCHAR(100),
+    status ENUM('active', 'inactive', 'suspended') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email (email),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS posts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    status ENUM('draft', 'published', 'archived') DEFAULT 'draft',
+    views INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    published_at TIMESTAMP NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_status (status),
+    INDEX idx_published_at (published_at),
+    FULLTEXT INDEX idx_title_content (title, content)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS comments (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    post_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    status ENUM('pending', 'approved', 'spam') DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_post_id (post_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_status_created (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ====================================================================================
+-- DATOS DE EJEMPLO
+-- ====================================================================================
+
+INSERT INTO users (username, email, password_hash, full_name) VALUES
+('admin', 'admin@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrator'),
+('john_doe', 'john@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'John Doe'),
+('jane_smith', 'jane@example.com', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Jane Smith');
+
+INSERT INTO posts (user_id, title, content, status, published_at) VALUES
+(1, 'Welcome to our platform', 'This is the first post on our platform. Welcome!', 'published', NOW()),
+(2, 'Getting Started with MySQL', 'MySQL is a powerful relational database...', 'published', NOW()),
+(3, 'Docker Best Practices', 'Here are some best practices for using Docker...', 'draft', NULL);
+
+INSERT INTO comments (post_id, user_id, content, status) VALUES
+(1, 2, 'Great platform! Looking forward to using it.', 'approved'),
+(1, 3, 'Thanks for creating this!', 'approved'),
+(2, 1, 'Very helpful tutorial!', 'approved');
+
+-- ====================================================================================
+-- VERIFICACIÓN
+-- ====================================================================================
+
+SELECT 'Database initialized successfully!' AS Status;
+SELECT COUNT(*) AS user_count FROM users;
+SELECT COUNT(*) AS post_count FROM posts;
+SELECT COUNT(*) AS comment_count FROM comments;

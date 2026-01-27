@@ -1,0 +1,217 @@
+# ====================================================================================
+# MYSQLD EXPORTER - CUSTOM QUERIES CONFIGURATION
+# ====================================================================================
+# Este archivo define queries personalizadas para el mysqld_exporter
+# Similar a postgres-queries.yaml para PostgreSQL
+# ====================================================================================
+# 
+# Collectors habilitados en el exporter:
+# - collect.info_schema.tables
+# - collect.info_schema.innodb_tablespaces  
+# - collect.info_schema.innodb_metrics
+# - collect.global_status
+# - collect.global_variables
+# - collect.slave_status
+# - collect.info_schema.processlist
+# - collect.perf_schema.tablelocks
+# - collect.perf_schema.file_events
+# - collect.perf_schema.eventswaits
+# - collect.auto_increment.columns
+# - collect.binlog_size
+# - collect.perf_schema.tableiowaits
+# - collect.perf_schema.indexiowaits
+# - collect.perf_schema.tablestat
+#
+# ====================================================================================
+# NOTA: Este archivo es de referencia. El mysqld_exporter usa los collectors
+#       habilitados directamente. No es necesario montar este archivo a menos
+#       que quieras agregar queries personalizadas adicionales.
+# ====================================================================================
+
+# ====================================================================================
+# MÉTRICAS PRINCIPALES RECOLECTADAS
+# ====================================================================================
+
+# 1. ESTADO GLOBAL (global_status)
+#    - Uptime
+#    - Connections
+#    - Queries
+#    - Slow_queries
+#    - Questions
+#    - Com_* (comandos)
+#    - Bytes_received/sent
+#    - Threads_connected/running
+#    - Aborted_clients/connects
+#    - Table_locks_waited
+#    - Created_tmp_tables/disk_tables
+
+# 2. VARIABLES GLOBALES (global_variables)
+#    - max_connections
+#    - innodb_buffer_pool_size
+#    - query_cache_size
+#    - thread_cache_size
+#    - table_open_cache
+
+# 3. INNODB METRICS (innodb_metrics)
+#    - innodb_buffer_pool_*
+#    - innodb_rows_*
+#    - innodb_data_*
+#    - innodb_log_*
+#    - innodb_page_size
+
+# 4. PROCESSLIST (processlist)
+#    - Estado de queries activas
+#    - Tiempo de ejecución
+#    - Info de queries
+
+# 5. TABLA STATS (table_stats)
+#    - Rows_read
+#    - Rows_inserted
+#    - Rows_updated
+#    - Rows_deleted
+
+# 6. REPLICACIÓN (slave_status)
+#    - Seconds_Behind_Master
+#    - Slave_IO_Running
+#    - Slave_SQL_Running
+
+# 7. BINARY LOGS (binlog_size)
+#    - Tamaño de binary logs
+
+# ====================================================================================
+# QUERIES PERSONALIZADAS ADICIONALES (Opcional)
+# ====================================================================================
+# Para usar queries personalizadas, configura el exporter con:
+# --config.my-cnf=/path/to/custom-queries.cnf
+# 
+# Y crea un archivo .cnf con formato:
+#
+# [[queries]]
+# query_name = "custom_query_name"
+# query = "SELECT COUNT(*) as value FROM information_schema.tables"
+# [[queries.labels]]
+# label = "database"
+# value = "information_schema"
+# [[queries.values]]
+# value = "value"
+#
+# ====================================================================================
+
+# Ejemplo de query personalizada: Conteo de bases de datos por schema
+# [[queries]]
+# query_name = "database_count"
+# query = """
+#   SELECT 
+#     SCHEMA_NAME as db_name,
+#     COUNT(*) as table_count
+#   FROM information_schema.TABLES
+#   GROUP BY SCHEMA_NAME
+# """
+
+# Ejemplo: Tamaño de bases de datos
+# [[queries]]
+# query_name = "database_size_bytes"
+# query = """
+#   SELECT 
+#     table_schema as db_name,
+#     SUM(data_length + index_length) as size_bytes
+#   FROM information_schema.TABLES
+#   GROUP BY table_schema
+# """
+
+# Ejemplo: Queries lentas recientes
+# [[queries]]
+# query_name = "slow_queries_recent"
+# query = """
+#   SELECT COUNT(*) as slow_query_count
+#   FROM mysql.slow_log
+#   WHERE start_time > DATE_SUB(NOW(), INTERVAL 1 HOUR)
+# """
+
+# Ejemplo: Conexiones por usuario
+# [[queries]]
+# query_name = "connections_by_user"
+# query = """
+#   SELECT 
+#     user,
+#     COUNT(*) as connection_count
+#   FROM information_schema.processlist
+#   GROUP BY user
+# """
+
+# Ejemplo: Uso de tablas temporales
+# [[queries]]
+# query_name = "tmp_tables_created"
+# query = """
+#   SELECT 
+#     VARIABLE_VALUE as tmp_tables_on_disk
+#   FROM performance_schema.global_status
+#   WHERE VARIABLE_NAME = 'Created_tmp_disk_tables'
+# """
+
+# ====================================================================================
+# MÉTRICAS IMPORTANTES A MONITOREAR
+# ====================================================================================
+#
+# 1. CONEXIONES:
+#    - mysql_global_status_threads_connected
+#    - mysql_global_status_max_used_connections
+#    - mysql_global_status_aborted_connects
+#
+# 2. QUERIES:
+#    - mysql_global_status_queries (rate)
+#    - mysql_global_status_slow_queries (rate)
+#    - mysql_global_status_questions (rate)
+#
+# 3. INNODB BUFFER POOL:
+#    - mysql_global_status_innodb_buffer_pool_read_requests (rate)
+#    - mysql_global_status_innodb_buffer_pool_reads (rate)
+#    - mysql_global_status_innodb_buffer_pool_pages_total
+#    - mysql_global_status_innodb_buffer_pool_pages_dirty
+#
+# 4. LOCKS:
+#    - mysql_global_status_table_locks_immediate
+#    - mysql_global_status_table_locks_waited
+#    - mysql_info_schema_processlist_seconds{state="Locked"}
+#
+# 5. TABLAS TEMPORALES:
+#    - mysql_global_status_created_tmp_tables (rate)
+#    - mysql_global_status_created_tmp_disk_tables (rate)
+#
+# 6. NETWORK:
+#    - mysql_global_status_bytes_received (rate)
+#    - mysql_global_status_bytes_sent (rate)
+#
+# 7. COMANDOS:
+#    - mysql_global_status_commands_total{command="select"} (rate)
+#    - mysql_global_status_commands_total{command="insert"} (rate)
+#    - mysql_global_status_commands_total{command="update"} (rate)
+#    - mysql_global_status_commands_total{command="delete"} (rate)
+#
+# 8. REPLICACIÓN:
+#    - mysql_slave_status_seconds_behind_master
+#    - mysql_slave_status_slave_io_running
+#    - mysql_slave_status_slave_sql_running
+#
+# ====================================================================================
+# QUERIES ÚTILES DE PROMQL PARA GRAFANA
+# ====================================================================================
+#
+# Buffer Pool Hit Ratio:
+# (1 - (rate(mysql_global_status_innodb_buffer_pool_reads[5m]) / 
+#       rate(mysql_global_status_innodb_buffer_pool_read_requests[5m]))) * 100
+#
+# Queries por segundo:
+# rate(mysql_global_status_queries[5m])
+#
+# Conexiones activas vs máximo:
+# (mysql_global_status_threads_connected / mysql_global_variables_max_connections) * 100
+#
+# Tablas temporales en disco (porcentaje):
+# (rate(mysql_global_status_created_tmp_disk_tables[5m]) / 
+#  rate(mysql_global_status_created_tmp_tables[5m])) * 100
+#
+# Queries lentas por segundo:
+# rate(mysql_global_status_slow_queries[5m])
+#
+# ====================================================================================

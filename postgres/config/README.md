@@ -1,146 +1,195 @@
-# 🔧 Scripts y Configuraciones PostgreSQL
+# 🔧 Configuraciones PostgreSQL
 
-Esta carpeta contiene archivos de configuración personalizados para PostgreSQL.
+Esta carpeta contiene todas las configuraciones centralizadas del proyecto, organizadas por tipo.
 
-## 📁 Archivos Disponibles
+## 📁 Estructura
 
-### `postgresql.conf.example`
-Archivo de configuración principal de PostgreSQL con valores optimizados y comentarios detallados.
-
-**Para usar:**
-```bash
-# 1. Copia el ejemplo
-cp config/postgresql.conf.example config/postgresql.conf
-
-# 2. Ajusta valores según tu servidor
-
-# 3. Edita tu plantilla (ej: templates/production.yml) y monta el archivo:
-volumes:
-  - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-
-# 4. Modifica el comando para usar el archivo:
-command: postgres -c config_file=/etc/postgresql/postgresql.conf
 ```
-
-**Secciones incluidas:**
-- Conexiones y autenticación
-- Recursos de memoria
-- Write-Ahead Log (WAL)
-- Replicación
-- Query planner
-- Checkpoints
-- Logging
-- Autovacuum
-- Monitoring
+config/
+├── prometheus/              # Configuraciones de Prometheus por entorno
+│   ├── dev.yml             # → Development
+│   ├── prod.yml            # → Production
+│   ├── test.yml            # → Testing/CI
+│   └── analytics.yml       # → Analytics/DW
+├── postgresql/              # Configuraciones de PostgreSQL
+│   ├── active/             # Configs en uso (production)
+│   │   ├── postgresql.conf
+│   │   └── pg_hba.conf
+│   └── examples/           # Templates de ejemplo
+│       ├── postgresql.conf.example
+│       └── pg_hba.conf.example
+├── queries/                 # Custom queries para postgres_exporter
+│   └── postgres-queries.yaml
+└── README.md               # Este archivo
+```
 
 ---
 
-### `pg_hba.conf.example`
-Archivo de control de acceso y autenticación de clientes.
+## 📂 prometheus/ - Configuraciones por Entorno
 
-**Para usar:**
-```bash
-# 1. Copia el ejemplo
-cp config/pg_hba.conf.example config/pg_hba.conf
+Cada plantilla docker-compose usa su propio archivo de configuración de Prometheus con valores específicos.
 
-# 2. Ajusta reglas de acceso
+### dev.yml
+- **Entorno:** Development
+- **Instance:** postgres-dev
+- **Database:** dev_database
+- **Uso:** `templates/development.yml`
 
-# 3. Edita tu plantilla y monta el archivo:
-volumes:
-  - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+### prod.yml
+- **Entorno:** Production
+- **Instance:** postgres-prod
+- **Database:** mydatabase
+- **Uso:** `templates/production.yml`
+
+### test.yml
+- **Entorno:** Testing/CI
+- **Instance:** postgres-test
+- **Database:** test_db
+- **Uso:** `templates/testing.yml`
+
+### analytics.yml
+- **Entorno:** Analytics
+- **Instance:** postgres-analytics
+- **Database:** analytics_db
+- **Uso:** `templates/analytics.yml`
+
+**📌 Nota:** Los archivos tienen valores hardcodeados específicos para cada entorno. No usan variables de entorno porque Prometheus no las soporta en su archivo de configuración.
+
+---
+
+## 📂 queries/ - Custom Metrics
+
+### postgres-queries.yaml (351 líneas)
+
+Queries personalizadas para postgres_exporter compatibles con PostgreSQL 17.
+
+**13 Categorías incluidas:**
+1. Database Statistics
+2. Table & Index Statistics
+3. Bloat Analysis
+4. Locks & Blocking Queries
+5. Replication Status
+6. Cache Hit Ratios
+7. WAL Statistics
+8. Background Writer
+9. **Checkpointer (PostgreSQL 17)** - Usa `pg_stat_checkpointer`
+10. Autovacuum Progress
+11. Connection Pooling
+12. Query Performance
+13. System Information
+
+**🔑 Montado automáticamente en las 4 plantillas:**
+```yaml
+postgres-exporter:
+  environment:
+    PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres-exporter/queries.yaml"
+  volumes:
+    - ../config/queries/postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
 ```
 
-**Configuraciones incluidas:**
-- Desarrollo (localhost)
-- Producción (redes específicas)
-- SSL/TLS
-- Replicación
-- Roles específicos
+---
+
+## 📂 postgresql/ - Configuración de PostgreSQL
+
+### active/ - Configuraciones Activas
+
+Archivos de configuración de PostgreSQL en uso por la plantilla `production.yml`.
+
+#### postgresql.conf
+Configuración principal de PostgreSQL con parámetros optimizados.
+
+#### pg_hba.conf
+Control de acceso y autenticación de clientes.
+
+**Montaje en production.yml:**
+```yaml
+volumes:
+  - ../config/postgresql/active/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+  - ../config/postgresql/active/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+command:
+  - "postgres"
+  - "-c"
+  - "config_file=/etc/postgresql/postgresql.conf"
+  - "-c"
+  - "hba_file=/etc/postgresql/pg_hba.conf"
+```
+
+### examples/ - Templates de Ejemplo
+
+Ejemplos de configuración que puedes copiar y personalizar.
+
+**Para usar:**
+```powershell
+# Copiar ejemplo a activo
+Copy-Item config/postgresql/examples/postgresql.conf.example config/postgresql/active/postgresql.conf
+Copy-Item config/postgresql/examples/pg_hba.conf.example config/postgresql/active/pg_hba.conf
+
+# Editar según necesidades
+notepad config/postgresql/active/postgresql.conf
+```
+
+**📌 Nota:** Solo `production.yml` monta estos archivos. Las otras plantillas (`development`, `testing`, `analytics`) usan configuración inline via comandos `-c`.
 
 ---
 
 ## 🎯 Casos de Uso
 
 ### Desarrollo Local
-```bash
-# Usa templates/development.yml
-# Sin archivos personalizados - usa defaults
-# Configuración mediante variables de entorno
+```powershell
+# Usa development con dev.yml
 docker-compose -f templates/development.yml up -d
+# Métricas con instance: postgres-dev, database: dev_database
 ```
 
-### Producción Simple
-```bash
-# Usa templates/production.yml
-# Configuración optimizada pre-definida en la plantilla
+### Testing/CI
+```powershell
+# Usa testing con test.yml
+docker-compose -f templates/testing.yml up -d
+# Métricas con instance: postgres-test, database: test_db
+```
+
+### Production Simple
+```powershell
+# Usa production con prod.yml
+docker-compose -f templates/production.yml up -d
+# Métricas con instance: postgres-prod, database: mydatabase
+```
+
+### Production Avanzada
+```powershell
+# 1. Personalizar configuración de PostgreSQL
+Copy-Item config/postgresql/examples/*.example config/postgresql/active/
+
+# 2. Editar archivos
+notepad config/postgresql/active/postgresql.conf
+notepad config/postgresql/active/pg_hba.conf
+
+# 3. Levantar con configuración personalizada
 docker-compose -f templates/production.yml up -d
 ```
 
-### Producción Avanzada
-```bash
-# Edita templates/production.yml para usar archivos personalizados:
-# volumes:
-#   - ./config/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-#   - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
-# command: postgres -c config_file=/etc/postgresql/postgresql.conf
-
-docker-compose -f templates/production.yml up -d
+### Analytics/Data Warehouse
+```powershell
+# Usa analytics con analytics.yml
+docker-compose -f templates/analytics.yml up -d
+# Métricas con instance: postgres-analytics, database: analytics_db
 ```
 
 ---
 
 ## 🔄 Recargar Configuración
 
-Algunos cambios se pueden aplicar sin reiniciar:
+Algunos cambios de PostgreSQL se pueden aplicar sin reiniciar:
 
-```bash
+```powershell
 # Recargar configuración (sin downtime)
-# Usa el nombre del contenedor según tu plantilla:
-# postgres_dev, postgres_prod, postgres_test, o postgres_analytics
-docker exec postgres_dev psql -U postgres -c "SELECT pg_reload_conf();"
+docker exec postgres_prod psql -U postgres -c "SELECT pg_reload_conf();"
 
-# Verificar parámetros actuales
-docker exec postgres_dev psql -U postgres -c "SHOW shared_buffers;"
-docker exec postgres_conection_test psql -U postgres -c "SHOW max_connections;"
+# Verificar parámetro
+docker exec postgres_prod psql -U postgres -c "SHOW shared_buffers;"
 ```
 
-**Requieren reinicio:**
-- `shared_buffers`
-- `max_connections`
-- `wal_level`
-- `max_wal_senders`
-
-**No requieren reinicio:**
-- `work_mem`
-- `maintenance_work_mem`
-- `effective_cache_size`
-- `log_statement`
-- La mayoría de parámetros de logging
-
----
-
-## 🛠️ Herramientas de Configuración
-
-### PGTune
-Genera configuración optimizada según tu hardware:
-
-🔗 https://pgtune.leopard.in.ua/
-
-**Inputs:**
-- Versión de PostgreSQL
-- OS
-- Tipo de aplicación (Web, OLTP, Data warehouse, Desktop, Mixed)
-- RAM total
-- CPUs
-- Número de conexiones
-- Tipo de disco (SSD/HDD)
-
-**Output:** Valores optimizados para `postgresql.conf`
-
----
-
-## 📚 Referencias
-
-- [PostgreSQL Runtime Configuration](https://www.postgresql.org/docs/current/runtime-config.html)
-- [Client Authentication (pg_hba.conf)](https://www.postgresql.org/docs/current/auth-pg-hba-conf.html)
-- [Performance Tuning](https://wiki.postgresql.org/wiki/Performance_Optimization)
+Para cambios que requieren reinicio:
+```powershell
+docker-compose -f templates/production.yml restart postgres
+```

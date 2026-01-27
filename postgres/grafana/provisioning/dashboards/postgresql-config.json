@@ -1,161 +1,261 @@
 {
-  "annotations": {
-    "list": []
-  },
-  "editable": true,
-  "gnetId": null,
-  "graphTooltip": 1,
-  "id": null,
-  "links": [],
-  "panels": [
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "palette-classic"},
-          "custom": {
-            "axisLabel": "Configuración",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "unit": "short"
-        }
-      },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
-      "id": 1,
-      "options": {
-        "legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right"},
-        "tooltip": {"mode": "multi"}
-      },
-      "targets": [
-        {
-          "expr": "pg_settings_value{name=\"shared_buffers\"}",
-          "legendFormat": "shared_buffers ({{unit}})",
-          "refId": "A"
-        },
-        {
-          "expr": "pg_settings_value{name=\"effective_cache_size\"}",
-          "legendFormat": "effective_cache_size ({{unit}})",
-          "refId": "B"
-        },
-        {
-          "expr": "pg_settings_value{name=\"work_mem\"}",
-          "legendFormat": "work_mem ({{unit}})",
-          "refId": "C"
-        },
-        {
-          "expr": "pg_settings_value{name=\"maintenance_work_mem\"}",
-          "legendFormat": "maintenance_work_mem ({{unit}})",
-          "refId": "D"
-        }
-      ],
-      "title": "Configuración de Memoria",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "palette-classic"},
-          "custom": {
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 0,
-            "gradientMode": "none",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "mappings": [],
-          "unit": "short"
-        }
-      },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
-      "id": 2,
-      "options": {
-        "legend": {"calcs": ["lastNotNull"], "displayMode": "table", "placement": "right"},
-        "tooltip": {"mode": "multi"}
-      },
-      "targets": [
-        {
-          "expr": "pg_settings_value{name=\"max_connections\"}",
-          "legendFormat": "max_connections",
-          "refId": "A"
-        },
-        {
-          "expr": "pg_settings_value{name=\"max_wal_size\"}",
-          "legendFormat": "max_wal_size ({{unit}})",
-          "refId": "B"
-        },
-        {
-          "expr": "pg_settings_value{name=\"checkpoint_timeout\"}",
-          "legendFormat": "checkpoint_timeout ({{unit}})",
-          "refId": "C"
-        },
-        {
-          "expr": "pg_settings_value{name=\"autovacuum_max_workers\"}",
-          "legendFormat": "autovacuum_max_workers",
-          "refId": "D"
-        }
-      ],
-      "title": "Configuración de Conexiones y Procesos",
-      "type": "timeseries"
-    },
-    {
-      "datasource": "Prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "custom": {"align": "auto", "displayMode": "auto"},
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [{"color": "green", "value": null}]
-          }
-        }
-      },
-      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
-      "id": 3,
-      "options": {
-        "showHeader": true,
-        "sortBy": [{"desc": true, "displayName": "Value"}]
-      },
-      "pluginVersion": "8.0.0",
-      "targets": [
-        {
-          "expr": "pg_settings_value",
-          "format": "table",
-          "instant": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Todas las Configuraciones (pg_settings)",
-      "transformations": [
-        {"id": "organize", "options": {"excludeByName": {"Time": true, "job": true, "instance": true}, "indexByName": {}, "renameByName": {"name": "Parámetro", "value": "Valor", "unit": "Unidad", "context": "Contexto", "source": "Origen"}}}
-      ],
-      "type": "table"
-    }
-  ],
-  "refresh": "30s",
-  "schemaVersion": 27,
-  "style": "dark",
-  "tags": ["postgresql", "configuration"],
-  "templating": {"list": []},
-  "time": {"from": "now-1h", "to": "now"},
-  "timepicker": {},
-  "timezone": "browser",
-  "title": "PostgreSQL - Configuración",
-  "uid": "postgresql-config",
-  "version": 1
+    "annotations":  {
+                        "list":  [
+
+                                 ]
+                    },
+    "editable":  true,
+    "gnetId":  null,
+    "graphTooltip":  1,
+    "id":  null,
+    "links":  [
+
+              ],
+    "panels":  [
+                   {
+                       "datasource":  {
+                                          "type":  "prometheus",
+                                          "uid":  "prometheus"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "Configuración",
+                                                                           "axisPlacement":  "auto",
+                                                                           "barAlignment":  0,
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0,
+                                                                           "gradientMode":  "none",
+                                                                           "lineWidth":  1,
+                                                                           "pointSize":  5,
+                                                                           "showPoints":  "never",
+                                                                           "spanNulls":  true
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "unit":  "short"
+                                                        }
+                                       },
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  0,
+                                       "y":  0
+                                   },
+                       "id":  1,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+                                                                    "lastNotNull"
+                                                                ],
+                                                      "displayMode":  "table",
+                                                      "placement":  "right"
+                                                  },
+                                       "tooltip":  {
+                                                       "mode":  "multi"
+                                                   }
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "pg_settings_shared_buffers_bytes{server=\"postgres:5432\"}",
+                                           "legendFormat":  "shared_buffers (bytes)",
+                                           "refId":  "A"
+                                       },
+                                       {
+                                           "expr":  "pg_settings_effective_cache_size_bytes{server=\"postgres:5432\"}",
+                                           "legendFormat":  "effective_cache_size (bytes)",
+                                           "refId":  "B"
+                                       },
+                                       {
+                                           "expr":  "pg_settings_work_mem_bytes{server=\"postgres:5432\"}",
+                                           "legendFormat":  "work_mem (bytes)",
+                                           "refId":  "C"
+                                       },
+                                       {
+                                           "expr":  "pg_settings_maintenance_work_mem_bytes{server=\"postgres:5432\"}",
+                                           "legendFormat":  "maintenance_work_mem (bytes)",
+                                           "refId":  "D"
+                                       }
+                                   ],
+                       "title":  "Configuración de Memoria",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "prometheus",
+                                          "uid":  "prometheus"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "palette-classic"
+                                                                      },
+                                                            "custom":  {
+                                                                           "axisLabel":  "",
+                                                                           "axisPlacement":  "auto",
+                                                                           "barAlignment":  0,
+                                                                           "drawStyle":  "line",
+                                                                           "fillOpacity":  0,
+                                                                           "gradientMode":  "none",
+                                                                           "lineWidth":  1,
+                                                                           "pointSize":  5,
+                                                                           "showPoints":  "never",
+                                                                           "spanNulls":  true
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "unit":  "short"
+                                                        }
+                                       },
+                       "gridPos":  {
+                                       "h":  8,
+                                       "w":  12,
+                                       "x":  12,
+                                       "y":  0
+                                   },
+                       "id":  2,
+                       "options":  {
+                                       "legend":  {
+                                                      "calcs":  [
+                                                                    "lastNotNull"
+                                                                ],
+                                                      "displayMode":  "table",
+                                                      "placement":  "right"
+                                                  },
+                                       "tooltip":  {
+                                                       "mode":  "multi"
+                                                   }
+                                   },
+                       "targets":  [
+                                       {
+                                           "expr":  "pg_settings_max_connections{server=\"postgres:5432\"}",
+                                           "legendFormat":  "max_connections",
+                                           "refId":  "A"
+                                       },
+                                       {
+                                           "expr":  "pg_settings_max_wal_size_bytes{server=\"postgres:5432\"}",
+                                           "legendFormat":  "max_wal_size (bytes)",
+                                           "refId":  "B"
+                                       },
+                                       {
+                                           "expr":  "pg_settings_checkpoint_timeout_seconds{server=\"postgres:5432\"}",
+                                           "legendFormat":  "checkpoint_timeout (seconds)",
+                                           "refId":  "C"
+                                       },
+                                       {
+                                           "expr":  "pg_settings_autovacuum_max_workers{server=\"postgres:5432\"}",
+                                           "legendFormat":  "autovacuum_max_workers",
+                                           "refId":  "D"
+                                       }
+                                   ],
+                       "title":  "Configuración de Conexiones y Procesos",
+                       "type":  "timeseries"
+                   },
+                   {
+                       "datasource":  {
+                                          "type":  "prometheus",
+                                          "uid":  "prometheus"
+                                      },
+                       "fieldConfig":  {
+                                           "defaults":  {
+                                                            "color":  {
+                                                                          "mode":  "thresholds"
+                                                                      },
+                                                            "custom":  {
+                                                                           "align":  "auto",
+                                                                           "displayMode":  "auto"
+                                                                       },
+                                                            "mappings":  [
+
+                                                                         ],
+                                                            "thresholds":  {
+                                                                               "mode":  "absolute",
+                                                                               "steps":  [
+                                                                                             {
+                                                                                                 "color":  "green",
+                                                                                                 "value":  null
+                                                                                             }
+                                                                                         ]
+                                                                           }
+                                                        }
+                                       },
+                       "gridPos":  {
+                                       "h":  10,
+                                       "w":  24,
+                                       "x":  0,
+                                       "y":  8
+                                   },
+                       "id":  3,
+                       "options":  {
+                                       "showHeader":  true,
+                                       "sortBy":  [
+                                                      {
+                                                          "desc":  true,
+                                                          "displayName":  "Value"
+                                                      }
+                                                  ]
+                                   },
+                       "pluginVersion":  "8.0.0",
+                       "targets":  [
+                                       {
+                                           "expr":  "{__name__=~\"pg_settings_.+\", server=\"postgres:5432\"}",
+                                           "format":  "table",
+                                           "instant":  true,
+                                           "refId":  "A"
+                                       }
+                                   ],
+                       "title":  "Todas las Configuraciones (pg_settings)",
+                       "transformations":  [
+                                               {
+                                                   "id":  "organize",
+                                                   "options":  {
+                                                                   "excludeByName":  {
+                                                                                         "Time":  true,
+                                                                                         "job":  true,
+                                                                                         "instance":  true
+                                                                                     },
+                                                                   "indexByName":  {
+
+                                                                                   },
+                                                                   "renameByName":  {
+                                                                                        "name":  "Parámetro",
+                                                                                        "value":  "Valor",
+                                                                                        "unit":  "Unidad",
+                                                                                        "context":  "Contexto",
+                                                                                        "source":  "Origen"
+                                                                                    }
+                                                               }
+                                               }
+                                           ],
+                       "type":  "table"
+                   }
+               ],
+    "refresh":  "30s",
+    "schemaVersion":  27,
+    "style":  "dark",
+    "tags":  [
+                 "postgresql",
+                 "configuration"
+             ],
+    "templating":  {
+                       "list":  [
+
+                                ]
+                   },
+    "time":  {
+                 "from":  "now-1h",
+                 "to":  "now"
+             },
+    "timepicker":  {
+
+                   },
+    "timezone":  "browser",
+    "title":  "PostgreSQL - Configuración",
+    "uid":  "postgresql-config",
+    "version":  1
 }

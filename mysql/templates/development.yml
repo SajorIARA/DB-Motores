@@ -1,0 +1,192 @@
+# ====================================================================================
+# PLANTILLA MYSQL - DESARROLLO LOCAL
+# ====================================================================================
+# Configuración optimizada para desarrollo local
+# - Configuración ligera (128MB buffer pool)
+# - 50 conexiones máximas
+# - Logging completo para debugging
+# - Monitoreo con Prometheus + Grafana
+# ====================================================================================
+
+services:
+  # ==================================================================================
+  # MYSQL DATABASE
+  # ==================================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_dev
+    restart: unless-stopped
+    
+    environment:
+      # Credenciales
+      MYSQL_ROOT_PASSWORD: dev_root_pass_123
+      MYSQL_USER: dev_user
+      MYSQL_PASSWORD: dev_pass_123
+      MYSQL_DATABASE: dev_database
+      
+      # Configuración de rendimiento (Desarrollo)
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 128M
+      MYSQL_MAX_CONNECTIONS: 50
+      MYSQL_INNODB_LOG_FILE_SIZE: 48M
+      MYSQL_INNODB_LOG_BUFFER_SIZE: 8M
+      
+      # Configuración de queries
+      MYSQL_QUERY_CACHE_SIZE: 16M
+      MYSQL_QUERY_CACHE_TYPE: 1
+      MYSQL_SORT_BUFFER_SIZE: 2M
+      MYSQL_READ_BUFFER_SIZE: 1M
+      
+      # Logging (completo para desarrollo)
+      MYSQL_GENERAL_LOG: 1
+      MYSQL_SLOW_QUERY_LOG: 1
+      MYSQL_LONG_QUERY_TIME: 2
+      MYSQL_LOG_ERROR_VERBOSITY: 3
+    
+    ports:
+      - "3306:3306"
+    
+    volumes:
+      # Datos persistentes
+      - mysql_dev_data:/var/lib/mysql
+      
+      # Scripts de inicialización (crea usuario exporter)
+      - ../init-scripts:/docker-entrypoint-initdb.d
+      
+      # Configuración personalizada (opcional)
+      # - ../config/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pdev_root_pass_123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    networks:
+      - mysql_dev_network
+
+  # ==================================================================================
+  # MYSQLD EXPORTER - Métricas para Prometheus
+  # ==================================================================================
+  mysqld-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysqld_exporter_dev
+    restart: unless-stopped
+    
+    environment:
+      # Connection string para MySQL
+      DATA_SOURCE_NAME: "exporter:exporter_password_123@(mysql:3306)/"
+    
+    ports:
+      - "9104:9104"
+    
+    volumes:
+      - ../.my.cnf:/.my.cnf:ro
+    
+    command:
+      - --collect.info_schema.tables
+      - --collect.info_schema.innodb_tablespaces
+      - --collect.info_schema.innodb_metrics
+      - --collect.global_status
+      - --collect.global_variables
+      - --collect.slave_status
+      - --collect.info_schema.processlist
+      - --collect.perf_schema.tablelocks
+      - --collect.perf_schema.file_events
+      - --collect.perf_schema.eventswaits
+      - --collect.auto_increment.columns
+      - --collect.binlog_size
+      - --collect.perf_schema.tableiowaits
+      - --collect.perf_schema.indexiowaits
+    
+    depends_on:
+      mysql:
+        condition: service_healthy
+    
+    networks:
+      - mysql_dev_network
+
+  # ==================================================================================
+  # PROMETHEUS - Recolección de métricas
+  # ==================================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_mysql_dev
+    restart: unless-stopped
+    
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    
+    ports:
+      - "9090:9090"
+    
+    volumes:
+      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_mysql_dev_data:/prometheus
+    
+    depends_on:
+      - mysqld-exporter
+    
+    networks:
+      - mysql_dev_network
+
+  # ==================================================================================
+  # GRAFANA - Visualización de métricas
+  # ==================================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_mysql_dev
+    restart: unless-stopped
+    
+    environment:
+      # Credenciales de admin
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: dev_admin_123
+      
+      # Configuración
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource
+    
+    ports:
+      - "3000:3000"
+    
+    volumes:
+      # Dashboards y datasources pre-configurados
+      - ../grafana/provisioning:/etc/grafana/provisioning
+      - grafana_mysql_dev_data:/var/lib/grafana
+    
+    depends_on:
+      - prometheus
+    
+    networks:
+      - mysql_dev_network
+
+# ====================================================================================
+# VOLUMES - Almacenamiento persistente
+# ====================================================================================
+volumes:
+  mysql_dev_data:
+    name: mysql_dev_data
+  prometheus_mysql_dev_data:
+    name: prometheus_mysql_dev_data
+  grafana_mysql_dev_data:
+    name: grafana_mysql_dev_data
+
+# ====================================================================================
+# NETWORKS - Red privada para comunicación entre servicios
+# ====================================================================================
+networks:
+  mysql_dev_network:
+    name: mysql_dev_network
+    driver: bridge

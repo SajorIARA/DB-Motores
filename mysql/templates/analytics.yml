@@ -1,0 +1,167 @@
+# ====================================================================================
+# PLANTILLA MYSQL - ANALYTICS / DATA WAREHOUSE
+# ====================================================================================
+# Configuración optimizada para análisis de datos y queries complejas
+# - Buffer pool grande (1GB)
+# - work_mem alto para joins y sorts
+# - Configuraciones para queries largas
+# ====================================================================================
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_analytics
+    restart: unless-stopped
+    
+    environment:
+      MYSQL_ROOT_PASSWORD: analytics_root_pass_456
+      MYSQL_USER: analytics_user
+      MYSQL_PASSWORD: analytics_pass_456
+      MYSQL_DATABASE: analytics_database
+      
+      # Configuración para analytics
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 1G
+      MYSQL_INNODB_BUFFER_POOL_INSTANCES: 4
+      MYSQL_MAX_CONNECTIONS: 100
+      MYSQL_INNODB_LOG_FILE_SIZE: 256M
+      MYSQL_INNODB_LOG_BUFFER_SIZE: 32M
+      
+      # Optimizado para reads y queries complejos
+      MYSQL_SORT_BUFFER_SIZE: 8M
+      MYSQL_READ_BUFFER_SIZE: 4M
+      MYSQL_READ_RND_BUFFER_SIZE: 8M
+      MYSQL_JOIN_BUFFER_SIZE: 8M
+      MYSQL_TMP_TABLE_SIZE: 256M
+      MYSQL_MAX_HEAP_TABLE_SIZE: 256M
+      
+      # Timeouts largos para queries complejos
+      MYSQL_MAX_EXECUTION_TIME: 300000
+      MYSQL_INTERACTIVE_TIMEOUT: 3600
+      MYSQL_WAIT_TIMEOUT: 3600
+      
+      # Cache y buffers
+      MYSQL_TABLE_OPEN_CACHE: 2000
+      MYSQL_TABLE_DEFINITION_CACHE: 1000
+      MYSQL_THREAD_CACHE_SIZE: 50
+      
+      # Logging de queries lentas
+      MYSQL_SLOW_QUERY_LOG: 1
+      MYSQL_LONG_QUERY_TIME: 10
+      MYSQL_LOG_QUERIES_NOT_USING_INDEXES: 1
+    
+    ports:
+      - "3306:3306"
+    
+    volumes:
+      - mysql_analytics_data:/var/lib/mysql
+      - ../init-scripts:/docker-entrypoint-initdb.d
+      # - ./config/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+      - --max-allowed-packet=512M
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-panalytics_root_pass_456"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    
+    networks:
+      - mysql_analytics_network
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:latest
+    container_name: mysqld_exporter_analytics
+    restart: unless-stopped
+    
+    environment:
+      DATA_SOURCE_NAME: "exporter:exporter_password_123@(mysql:3306)/"
+    
+    ports:
+      - "9104:9104"
+    
+    volumes:
+      - ../.my.cnf:/.my.cnf:ro
+    
+    command:
+      - --collect.info_schema.tables
+      - --collect.info_schema.innodb_tablespaces
+      - --collect.info_schema.innodb_metrics
+      - --collect.global_status
+      - --collect.global_variables
+      - --collect.info_schema.processlist
+      - --collect.perf_schema.tablelocks
+      - --collect.perf_schema.tableiowaits
+      - --collect.perf_schema.indexiowaits
+    
+    depends_on:
+      mysql:
+        condition: service_healthy
+    
+    networks:
+      - mysql_analytics_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus_mysql_analytics
+    restart: unless-stopped
+    
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    
+    ports:
+      - "9090:9090"
+    
+    volumes:
+      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_mysql_analytics_data:/prometheus
+    
+    depends_on:
+      - mysqld-exporter
+    
+    networks:
+      - mysql_analytics_network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_mysql_analytics
+    restart: unless-stopped
+    
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: analytics_admin_789
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_INSTALL_PLUGINS: grafana-clock-panel,grafana-simple-json-datasource,grafana-piechart-panel
+    
+    ports:
+      - "3000:3000"
+    
+    volumes:
+      - ../grafana/provisioning:/etc/grafana/provisioning
+      - grafana_mysql_analytics_data:/var/lib/grafana
+    
+    depends_on:
+      - prometheus
+    
+    networks:
+      - mysql_analytics_network
+
+volumes:
+  mysql_analytics_data:
+    name: mysql_analytics_data
+  prometheus_mysql_analytics_data:
+    name: prometheus_mysql_analytics_data
+  grafana_mysql_analytics_data:
+    name: grafana_mysql_analytics_data
+
+networks:
+  mysql_analytics_network:
+    name: mysql_analytics_network
+    driver: bridge

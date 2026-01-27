@@ -1,58 +1,36 @@
-# Variables de entorno (contienen credenciales)
-.env
-.env.*
-!.env.example
-
-# Secrets
-secrets/
-*.key
-*.pem
-*.crt
-
-# Datos de bases de datos
+﻿# Datos y volumenes de Docker
 **/data/
-**/postgres-data/
-**/mysql-data/
-**/mongodb-data/
-**/redis-data/
-pgdata/
+postgres/data/
+mysql/data/
 
-# Backups
-backups/
-*.sql
-*.dump
-*.backup
-*.bak
+# Volumenes de Grafana (pueden contener credenciales)
+**/grafana/analytics/
+**/grafana/production/
 
 # Logs
-logs/
 *.log
 
-# IDEs y editores
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-*.iml
+# Archivos de entorno
+.env
+*.env
 
-# OS
+# Archivos temporales
+*.tmp
+*.swp
+*~
+
+# MacOS
 .DS_Store
+
+# Windows
 Thumbs.db
 desktop.ini
 
-# Docker
-docker-compose.override.yml
+# IDE
+.vscode/
+.idea/
+*.code-workspace
 
-# Configuraciones personalizadas
-**/postgresql.conf
-**/pg_hba.conf
-**/my.cnf
-**/mongod.conf
-!**/*.example
-!**/*.conf.example
-
-# Scripts personalizados con datos sensibles
-**/init-scripts/*.sql
-**/init-scripts/*.sh
-!**/init-scripts/*.example
+# Backups
+*.bak
+*.backup

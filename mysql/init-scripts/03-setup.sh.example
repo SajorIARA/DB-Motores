@@ -1,0 +1,104 @@
+#!/bin/bash
+# ====================================================================================
+# SCRIPT DE SETUP AVANZADO
+# ====================================================================================
+# Este script permite configuraciones más complejas que requieren lógica bash
+# ====================================================================================
+
+set -e  # Detener en error
+
+echo "========================================="
+echo "MySQL Advanced Setup Script"
+echo "========================================="
+
+# Verificar que las variables de entorno estén definidas
+if [ -z "$MYSQL_ROOT_PASSWORD" ]; then
+    echo "Error: MYSQL_ROOT_PASSWORD no está definida"
+    exit 1
+fi
+
+# ====================================================================================
+# CREAR USUARIOS ADICIONALES
+# ====================================================================================
+
+echo "Creando usuarios adicionales..."
+
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF
+-- Usuario de solo lectura
+CREATE USER IF NOT EXISTS 'readonly'@'%' IDENTIFIED BY 'readonly123';
+GRANT SELECT ON \`$MYSQL_DATABASE\`.* TO 'readonly'@'%';
+
+-- Usuario de backup
+CREATE USER IF NOT EXISTS 'backup'@'%' IDENTIFIED BY 'backup123';
+GRANT SELECT, LOCK TABLES, SHOW VIEW, EVENT, TRIGGER ON \`$MYSQL_DATABASE\`.* TO 'backup'@'%';
+
+-- Usuario para monitoreo (para mysqld_exporter)
+CREATE USER IF NOT EXISTS 'exporter'@'%' IDENTIFIED BY 'exporter123' WITH MAX_USER_CONNECTIONS 3;
+GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
+
+FLUSH PRIVILEGES;
+
+SELECT User, Host FROM mysql.user WHERE User IN ('readonly', 'backup', 'exporter');
+EOF
+
+echo "✓ Usuarios creados"
+
+# ====================================================================================
+# CONFIGURAR PERFORMANCE SCHEMA (Opcional)
+# ====================================================================================
+
+echo "Configurando Performance Schema..."
+
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF
+-- Habilitar instrumentación de statements
+UPDATE performance_schema.setup_instruments 
+SET ENABLED = 'YES', TIMED = 'YES' 
+WHERE NAME LIKE 'statement/%';
+
+-- Habilitar consumers
+UPDATE performance_schema.setup_consumers 
+SET ENABLED = 'YES' 
+WHERE NAME LIKE '%statements%';
+
+SELECT * FROM performance_schema.setup_consumers WHERE ENABLED = 'YES';
+EOF
+
+echo "✓ Performance Schema configurado"
+
+# ====================================================================================
+# OPTIMIZACIONES ADICIONALES
+# ====================================================================================
+
+echo "Aplicando optimizaciones..."
+
+mysql -u root -p"$MYSQL_ROOT_PASSWORD" <<EOF
+-- Optimizar tablas
+OPTIMIZE TABLE \`$MYSQL_DATABASE\`.users;
+OPTIMIZE TABLE \`$MYSQL_DATABASE\`.posts;
+OPTIMIZE TABLE \`$MYSQL_DATABASE\`.comments;
+
+-- Analizar tablas para estadísticas
+ANALYZE TABLE \`$MYSQL_DATABASE\`.users;
+ANALYZE TABLE \`$MYSQL_DATABASE\`.posts;
+ANALYZE TABLE \`$MYSQL_DATABASE\`.comments;
+EOF
+
+echo "✓ Optimizaciones aplicadas"
+
+# ====================================================================================
+# FINALIZACIÓN
+# ====================================================================================
+
+echo "========================================="
+echo "Setup completado exitosamente!"
+echo "========================================="
+echo ""
+echo "Usuarios creados:"
+echo "  - readonly (solo lectura)"
+echo "  - backup (para backups)"
+echo "  - exporter (para monitoreo)"
+echo ""
+echo "Base de datos: $MYSQL_DATABASE"
+echo "========================================="
+
+exit 0

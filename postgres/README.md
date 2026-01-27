@@ -1,45 +1,148 @@
-# 🐘 PostgreSQL + Prometheus + Grafana - Stack Completo de Monitoreo
+# 🐘 PostgreSQL 17 + Prometheus + Grafana - Stack Completo de Monitoreo
 
-Sistema completo de PostgreSQL con monitoreo avanzado mediante Prometheus y visualización en Grafana. Incluye 4 plantillas pre-configuradas para diferentes escenarios de uso.
+Sistema completo de PostgreSQL 17 con monitoreo avanzado mediante Prometheus y visualización en Grafana. Incluye **4 modalidades pre-configuradas** (Development, Testing, Production, Analytics) con **6 dashboards profesionales** y **scripts de inicio automatizados**.
 
 ---
 
-## 🚀 Inicio Rápido (5 minutos)
+## ✨ Características Principales
 
-### 1️⃣ Elegir Plantilla
+- ✅ **PostgreSQL 17 Alpine** - Última versión estable
+- ✅ **4 Modalidades** - Development, Testing, Production, Analytics
+- ✅ **6 Dashboards Grafana** - Listos para usar
+- ✅ **350+ Métricas** vía postgres_exporter
+- ✅ **Auto-configuración** - pg_stat_statements y extensiones automáticas
+- ✅ **Scripts PowerShell** - Inicio con un click
+- ✅ **Compatible Windows/Linux/Mac** - 100% Docker
 
-```bash
-# Desde la raíz del repositorio
-cd postgres
+---
 
-# Desarrollo (configuración ligera)
+## 🎯 Modalidades Disponibles
+
+### 🔵 Development (Desarrollo Local)
+- **RAM**: 512MB - 1GB
+- **Propósito**: Desarrollo local y testing rápido
+- **Logging**: Completo (todas las queries)
+- **Persistencia**: ✅ Datos permanentes
+
+### 🟡 Testing (CI/CD)
+- **RAM**: 256MB - 512MB
+- **Propósito**: Tests automatizados, pipelines CI/CD
+- **Logging**: Desactivado (performance)
+- **Persistencia**: ❌ Todo en memoria (tmpfs)
+
+### 🟢 Production (Producción)
+- **RAM**: 4GB - 8GB+
+- **Propósito**: Alta carga, performance máxima
+- **Logging**: Solo errores y queries lentas
+- **Persistencia**: ✅ Datos permanentes + config files
+
+### 🟣 Analytics (Análisis/BI)
+- **RAM**: 2GB - 4GB
+- **Propósito**: Queries complejas, data warehouse
+- **Logging**: Queries > 5 segundos
+- **Persistencia**: ✅ Datos permanentes
+
+---
+
+## 🚀 Inicio Rápido (2 Formas)
+
+### Opción 1: Script Interactivo (Recomendado)
+
+```powershell
+# Ejecutar el gestor interactivo
+.\postgres-manager.ps1
+```
+
+El script te permite:
+- ✅ Elegir modalidad con menú visual
+- ✅ Ver estado de todos los ambientes
+- ✅ Detener/Iniciar servicios fácilmente
+- ✅ Acceso a ayuda y documentación
+
+### Opción 2: Scripts Individuales
+
+```powershell
+# Development
+.\start-development.ps1
+
+# Testing
+.\start-testing.ps1
+
+# Production
+.\start-production.ps1
+
+# Analytics
+.\start-analytics.ps1
+```
+
+### Opción 3: Docker Compose Manual
+
+```powershell
+# Navegar al directorio
+cd d:\DB-Motores\postgres
+
+# Levantar la modalidad deseada
 docker-compose -f templates/development.yml up -d
-
-# Producción (configuración optimizada)
-docker-compose -f templates/production.yml up -d
-
-# Testing/CI-CD (sin persistencia)
 docker-compose -f templates/testing.yml up -d
-
-# Analytics (optimizado para queries complejas)
+docker-compose -f templates/production.yml up -d
 docker-compose -f templates/analytics.yml up -d
 ```
 
-### 2️⃣ Acceder a los Servicios
+---
 
-| Servicio | URL | Credenciales |
-|----------|-----|--------------|
-| **PostgreSQL** | `localhost:5432` | Ver plantilla elegida |
-| **Grafana** | http://localhost:3000 | admin / (ver plantilla) |
-| **Prometheus** | http://localhost:9090 | - |
-| **Exporter** | http://localhost:9187/metrics | - |
+## 🌐 Acceso a Servicios
 
-### 3️⃣ Ver Dashboards en Grafana
+### Development
+| Servicio | URL | Usuario | Contraseña |
+|----------|-----|---------|------------|
+| PostgreSQL | `localhost:5432` | `dev_user` | `dev_pass_123` |
+| Grafana | http://localhost:3000 | `admin` | `dev_admin_123` |
+| Prometheus | http://localhost:9090 | - | - |
 
-1. Abre http://localhost:3000
-2. Login con credenciales de la plantilla
-3. Ve a **Dashboards** → Carpeta **PostgreSQL**
-4. Explora los 5 dashboards pre-configurados
+### Testing
+| Servicio | URL | Usuario | Contraseña |
+|----------|-----|---------|------------|
+| PostgreSQL | `localhost:5432` | `test_user` | `test_pass` |
+| Grafana | http://localhost:3001 | `admin` | `admin` |
+| Prometheus | http://localhost:9090 | - | - |
+
+### Production
+| Servicio | URL | Usuario | Contraseña |
+|----------|-----|---------|------------|
+| PostgreSQL | `localhost:5432` | Ver `.env` | Ver `.env` |
+| Grafana | http://localhost:3000 | Ver `.env` | Ver `.env` |
+| Prometheus | http://localhost:9090 | - | - |
+
+### Analytics
+| Servicio | URL | Usuario | Contraseña |
+|----------|-----|---------|------------|
+| PostgreSQL | `localhost:5432` | `analytics_user` | `analytics_pass_456` |
+| Grafana | http://localhost:3000 | `admin` | `analytics_admin_789` |
+| Prometheus | http://localhost:9090 | - | - |
+
+---
+
+## 📊 Dashboards de Grafana (6 Paneles)
+
+Una vez en Grafana (http://localhost:3000), encontrarás:
+
+### 1. **PostgreSQL Overview** 📈
+Visión general del sistema: conexiones, transacciones, cache hit ratio, uso de recursos
+
+### 2. **PostgreSQL Checkpoints** 🔄
+Checkpoints programados vs solicitados, timing, buffers escritos, WAL
+
+### 3. **PostgreSQL Configuration** ⚙️
+Configuración actual: shared_buffers, work_mem, max_connections, parámetros críticos
+
+### 4. **PostgreSQL Performance I/O** 💾
+I/O de lectura/escritura, bloques del cache, escrituras a disco, background writer
+
+### 5. **PostgreSQL Queries & Locks** 🔒
+Queries activas, queries lentas (>5s), locks, deadlocks, bloqueos por tabla
+
+### 6. **PostgreSQL Tables & Indexes** 🗂️
+Tablas más grandes, índices no usados, scans secuenciales vs índices, dead tuples
 
 ---
 
@@ -47,42 +150,53 @@ docker-compose -f templates/analytics.yml up -d
 
 ```
 postgres/
-├── 📄 README.md                    # Este archivo
-├── 📄 QUICK-START.md               # Guía rápida de uso
-├── 📄 STRUCTURE.md                 # Documentación de estructura
+├── 📄 README.md                        # Este archivo - Documentación principal
+├── 📄 QUICK-START.md                   # Guía rápida de inicio
+├── 📄 STRUCTURE.md                     # Documentación técnica detallada
+├── 📄 METRICAS-DISPONIBLES.md          # Catálogo de 350+ métricas
 │
-├── 📂 templates/                   # ⭐ PLANTILLAS PRE-CONFIGURADAS
-│   ├── 📄 README.md                # Documentación completa de plantillas
-│   ├── 📄 .env.example             # Ejemplo de variables de entorno
-│   ├── 📄 base.yml                 # Plantilla actual (configuración base)
-│   ├── 📄 development.yml          # Desarrollo local
-│   ├── 📄 production.yml           # Producción (alta carga)
-│   ├── 📄 testing.yml              # CI/CD y testing
-│   └── 📄 analytics.yml            # Data warehouse y BI
+├── 📂 templates/                       # ⭐ PLANTILLAS PRE-CONFIGURADAS
+│   ├── 📄 README.md                    # Comparativa de plantillas
+│   ├── 📄 .env                         # Variables de entorno (NO commitear)
+│   ├── 📄 .env.example                 # Ejemplo de configuración
+│   ├── 📄 development.yml              # Desarrollo local (128MB shared_buffers)
+│   ├── 📄 production.yml               # Producción (1GB shared_buffers)
+│   ├── 📄 testing.yml                  # CI/CD (64MB, sin persistencia)
+│   └── 📄 analytics.yml                # Analytics (1GB, 128MB work_mem)
 │
-├── 📂 grafana/                     # Configuración de Grafana
-│   ├── 📄 README.md                # Guía de Grafana
+├── 📂 grafana/                         # Configuración de Grafana
+│   ├── 📄 README.md                    # Guía de uso de dashboards
 │   └── 📂 provisioning/
-│       ├── 📂 datasources/         # Auto-configuración de Prometheus
-│       └── 📂 dashboards/          # 5 dashboards incluidos
+│       ├── 📂 datasources/             # Auto-configuración de Prometheus
+│       │   └── prometheus-datasource.yml
+│       └── 📂 dashboards/              # 5 dashboards funcionales
+│           ├── dashboard-provider.yml
+│           ├── postgresql-overview.json
+│           ├── postgresql-config.json
+│           ├── postgresql-performance-io.json
+│           ├── postgresql-queries-locks.json
+│           └── postgresql-tables-indexes.json
 │
-├── 📂 config/                      # Configuración avanzada de PostgreSQL
+├── 📂 config/                          # Configuración de PostgreSQL
+│   ├── 📄 README.md                    # Guía de configuración
+│   ├── 📄 postgresql.conf              # Config actual (production)
+│   ├── 📄 pg_hba.conf                  # Autenticación (production)
+│   ├── 📄 postgresql.conf.example      # Template con documentación
+│   └── 📄 pg_hba.conf.example          # Template de autenticación
+│
+├── 📂 init-scripts/                    # Scripts de inicialización SQL
 │   ├── 📄 README.md
-│   ├── pg_hba.conf.example
-│   └── postgresql.conf.example
+│   ├── 00-create-exporter-user.sql     # Usuario para postgres_exporter
+│   ├── 01-init.sql.example             # Schemas y tablas iniciales
+│   ├── 02-functions.sql.example        # Funciones personalizadas
+│   └── 03-setup.sh.example             # Script de setup automatizado
 │
-├── 📂 init-scripts/                # Scripts SQL de inicialización
-│   ├── 📄 README.md
-│   ├── 01-init.sql.example
-│   ├── 02-functions.sql.example
-│   └── 03-setup.sh.example
-│
-├── 📄 postgres-queries.yaml        # ⭐ 13 categorías de métricas custom
-├── 📄 prometheus.yml               # Configuración de scraping
-└── 📄 .gitignore                   # Ignorar .env y datos
+├── 📄 postgres-queries-safe.yaml       # ⭐ Custom queries (PostgreSQL 17)
+├── 📄 prometheus.yml                   # Configuración de Prometheus
+└── 📄 .gitignore                       # Ignorar .env, data/, logs/
 ```
 
-Ver [STRUCTURE.md](STRUCTURE.md) para documentación detallada de cada archivo.
+Ver [STRUCTURE.md](STRUCTURE.md) para documentación técnica completa.
 
 ---
 
@@ -90,143 +204,177 @@ Ver [STRUCTURE.md](STRUCTURE.md) para documentación detallada de cada archivo.
 
 ### Comparativa Rápida
 
-| Plantilla | RAM | Conexiones | Uso | Persistencia |
-|-----------|-----|------------|-----|--------------|
-| **development.yml** | 512MB-1GB | 20 | Desarrollo local | ✅ Volúmenes |
-| **production.yml** | 4GB-8GB | 200 | Producción | ✅ Volúmenes |
-| **testing.yml** | 256MB-512MB | 10 | CI/CD, tests | ❌ Temporal |
-| **analytics.yml** | 2GB-4GB | 50 | Data warehouse | ✅ Volúmenes |
+| Plantilla | RAM | shared_buffers | work_mem | Conexiones | Uso Principal |
+|-----------|-----|----------------|----------|------------|---------------|
+| **development.yml** | 512MB-1GB | 128MB | 4MB | 20 | Desarrollo local, debugging |
+| **production.yml** | 2GB-8GB | 1GB | 16MB | 100 | Producción, alta carga |
+| **testing.yml** | 256MB-512MB | 64MB | 2MB | 10 | CI/CD, tests automatizados |
+| **analytics.yml** | 2GB-4GB | 1GB | 128MB | 50 | Data warehouse, BI, queries complejas |
 
-Ver [templates/README.md](templates/README.md) para comparativa detallada.
+**Persistencia:**
+- ✅ `development.yml`, `production.yml`, `analytics.yml` - Datos en volúmenes Docker
+- ⚠️ `testing.yml` - Todo en memoria (tmpfs), se pierde al eliminar contenedor
 
----
-
-## 📊 Dashboards de Grafana Incluidos
-
-### 1. PostgreSQL - Vista General
-- Estado del servidor (UP/DOWN)
-- Conexiones activas
-- Cache hit ratio (gauge)
-- Tamaño de base de datos
-- Transacciones por segundo
-- Operaciones DML
-
-### 2. PostgreSQL - Configuración
-- Parámetros de memoria (shared_buffers, work_mem, etc.)
-- Configuración de conexiones
-- Tabla completa de pg_settings
-
-### 3. PostgreSQL - Queries y Locks
-- Locks por tipo y modo
-- Queries lentas (> 5 segundos)
-- Wait events activos
-- Duración de queries
-
-### 4. PostgreSQL - Tablas e Índices
-- Tablas con sequential scans (necesitan índices)
-- Tuplas muertas (necesitan VACUUM)
-- Uso de índices
-- Tamaños de tablas
-
-### 5. PostgreSQL - Performance e I/O
-- I/O de disco vs caché
-- Checkpoints
-- WAL statistics
-- Background writer
-- Archivos temporales
-
-Ver [grafana/README.md](grafana/README.md) para guía completa de dashboards.
+Ver [templates/README.md](templates/README.md) para configuración detallada de cada plantilla.
 
 ---
 
-## 🔧 Personalización Avanzada
+## 📊 Dashboards de Grafana
 
-### Usar Variables de Entorno
+Todos los dashboards están **pre-configurados** y muestran datos en tiempo real.
 
-1. **Copiar plantilla de ejemplo:**
-   ```bash
-   cp templates/.env.example .env
-   ```
+### 1. 📊 PostgreSQL - Vista General
+**Métricas principales del servidor**
+- Estado del servidor (pg_up)
+- Conexiones activas por estado
+- Cache Hit Ratio (debe estar > 95%)
+- Tamaño total de base de datos
+- Transacciones/s (commits + rollbacks)
+- Operaciones DML (INSERT, UPDATE, DELETE)
+- Archivos temporales (indica falta de work_mem)
 
-2. **Editar variables:**
-   ```bash
-   # .env
-   POSTGRES_USER=myuser
-   POSTGRES_PASSWORD=SecurePass123!
-   POSTGRES_DB=mydatabase
-   POSTGRES_SHARED_BUFFERS=2GB
-   POSTGRES_MAX_CONNECTIONS=150
-   ```
+### 2. ⚙️ PostgreSQL - Configuración
+**Visualización de parámetros de PostgreSQL**
+- **Memoria:** shared_buffers, work_mem, maintenance_work_mem, effective_cache_size
+- **Conexiones:** max_connections, checkpoint_timeout
+- **WAL:** max_wal_size, min_wal_size
+- **Costos:** random_page_cost, effective_io_concurrency
+- **Tabla completa:** Todos los parámetros de pg_settings
 
-3. **Levantar con variables:**
-   ```bash
-   docker-compose -f templates/production.yml --env-file .env up -d
-   ```
+### 3. 💾 PostgreSQL - Performance e I/O
+**Monitoreo de disco y rendimiento**
+- Bloques leídos: Disco vs Caché
+- Tiempo de I/O (lectura/escritura en ms)
+- Archivos temporales (count + bytes)
+- Deadlocks totales
+- Background Writer: Buffers limpiados
+- WAL: Segmentos activos y tamaño total
 
-### Variables Principales
+### 4. 🔒 PostgreSQL - Queries y Locks
+**Análisis de conexiones y bloqueos**
+- Conexiones por estado (active, idle, idle in transaction)
+- Duración máxima de transacciones activas
+- Deadlocks histórico
+- Estados de conexiones en tiempo real
 
-| Variable | Descripción | Ejemplo |
-|----------|-------------|---------|
-| `POSTGRES_USER` | Usuario de PostgreSQL | `myuser` |
-| `POSTGRES_PASSWORD` | Contraseña ⚠️ Requerida | `SecurePass123!` |
-| `POSTGRES_DB` | Nombre de base de datos | `mydatabase` |
-| `POSTGRES_SHARED_BUFFERS` | Memoria compartida | `2GB` |
-| `POSTGRES_MAX_CONNECTIONS` | Conexiones máximas | `200` |
-| `GF_ADMIN_USER` | Usuario Grafana | `admin` |
-| `GF_ADMIN_PASSWORD` | Password Grafana | `admin123` |
+### 5. 📋 PostgreSQL - Tablas e Índices
+**Métricas a nivel de base de datos**
+- Operaciones DML por segundo
+- Lectura de tuplas (returned vs fetched)
+- Cache Hit Ratio (gauge visual)
+- Archivos temporales (alerta si > 0)
+- Deadlocks
 
-Ver [templates/.env.example](templates/.env.example) para lista completa.
+### 6. 🔄 PostgreSQL - Checkpoints
+**Monitoreo de checkpoints (PostgreSQL 17)**
+- Checkpoint Rate: Scheduled vs Requested
+- Checkpoint Timing: Write Time & Sync Time
+- Total Checkpoints: Scheduled y Requested
+- Buffers Written by Checkpointer
+- Checkpoint Efficiency (gauge: >90% = óptimo)
+
+> **Checkpoint Efficiency:** Si está <50%, considera aumentar `checkpoint_timeout` o `max_wal_size`
+
+> **Todos los dashboards usan métricas default del postgres_exporter** - No requieren custom queries.
 
 ---
 
-## 📈 Métricas Monitoreadas
+## 📈 Métricas Disponibles
 
-El sistema incluye **13 categorías** de métricas personalizadas configuradas en [postgres-queries.yaml](postgres-queries.yaml):
+El proyecto expone **350+ métricas** vía postgres_exporter:
 
-1. **pg_settings** - Configuración completa de PostgreSQL
-2. **pg_database_stats** - Estadísticas por base de datos
-3. **pg_active_queries** - Queries activas y estados
-4. **pg_table_stats** - Estadísticas de tablas (Top 20)
-5. **pg_index_stats** - Uso de índices (Top 20)
-6. **pg_locks_detail** - Locks y bloqueos
-7. **pg_database_sizes** - Tamaños de bases de datos
-8. **pg_table_sizes** - Tamaños de tablas
-9. **pg_replication_status** - Estado de réplicas
-10. **pg_wal_stats** - Write-Ahead Log
-11. **pg_bgwriter** - Background writer y checkpoints
-12. **pg_slow_queries** - Queries lentas (> 5 seg)
-13. **pg_vacuum_progress** - Progreso de VACUUM
+### Categorías Principales
 
----
+| Categoría | Ejemplos | Cantidad |
+|-----------|----------|----------|
+| **Configuración** | `pg_settings_shared_buffers_bytes`, `pg_settings_max_connections` | 200+ |
+| **Base de Datos** | `pg_stat_database_*` (blks_hit, xact_commit, tup_inserted) | 30+ |
+| **Conexiones** | `pg_stat_activity_count`, `pg_stat_activity_max_tx_duration` | 10+ |
+| **Cache/I/O** | `pg_stat_database_blks_hit`, `pg_stat_database_blks_read` | 15+ |
+| **WAL** | `pg_wal_segments`, `pg_wal_size_bytes` | 5+ |
+| **Checkpoints** | `pg_stat_bgwriter_*` | 10+ |
+| **Replicación** | `pg_stat_replication_*` (si aplicable) | 20+ |
+| **Sistema** | `pg_up`, `process_cpu_seconds_total`, `process_resident_memory_bytes` | 10+ |
 
-## 🔒 Seguridad
+**Ver catálogo completo:** [METRICAS-DISPONIBLES.md](METRICAS-DISPONIBLES.md)
 
-### ⚠️ Antes de Producción
+### Ejemplos de Queries PromQL
 
-- [ ] **Cambiar credenciales por defecto**
-- [ ] **Usar contraseñas fuertes** (16+ caracteres)
-- [ ] **No exponer puertos públicamente** (usar VPN/proxy)
-- [ ] **Habilitar SSL/TLS en PostgreSQL**
-- [ ] **Configurar pg_hba.conf restrictivo**
-- [ ] **Usar Docker secrets en lugar de .env**
-- [ ] **Configurar backups automáticos**
-- [ ] **Configurar alertas en Grafana**
-- [ ] **Revisar logs regularmente**
+```promql
+# Cache Hit Ratio (%)
+(sum(rate(pg_stat_database_blks_hit{datname="mydatabase"}[5m])) / 
+(sum(rate(pg_stat_database_blks_hit{datname="mydatabase"}[5m])) + 
+sum(rate(pg_stat_database_blks_read{datname="mydatabase"}[5m])))) * 100
 
-### Ejemplo de Secrets (Docker Swarm/Kubernetes)
+# Conexiones activas
+pg_stat_database_numbackends{datname="mydatabase"}
 
-```yaml
-secrets:
-  postgres_password:
-    external: true
+# Transacciones por segundo
+rate(pg_stat_database_xact_commit{datname="mydatabase"}[1m]) + 
+rate(pg_stat_database_xact_rollback{datname="mydatabase"}[1m])
 
-services:
-  postgres:
-    secrets:
-      - postgres_password
-    environment:
-      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+# Shared Buffers configurado
+pg_settings_shared_buffers_bytes{server="postgres:5432"}
 ```
+---
+
+## 🔧 Uso Avanzado
+
+### 📝 Personalizar Configuración
+
+#### Opción 1: Variables de Entorno
+
+```powershell
+# Copiar plantilla de ejemplo
+Copy-Item templates\.env.example templates\.env
+
+# Editar templates\.env con tus valores
+POSTGRES_USER=myuser
+POSTGRES_PASSWORD=SecurePass123!
+POSTGRES_DB=mydatabase
+POSTGRES_SHARED_BUFFERS=2GB
+POSTGRES_MAX_CONNECTIONS=150
+
+# Levantar con configuración personalizada
+docker-compose -f templates/production.yml up -d
+```
+
+#### Opción 2: Archivos de Configuración (Production)
+
+```powershell
+# Editar archivos de configuración
+notepad config\postgresql.conf
+notepad config\pg_hba.conf
+
+# Los cambios se aplicarán al reiniciar
+docker-compose -f templates/production.yml restart postgres
+```
+
+### 🗄️ Scripts de Inicialización
+
+```powershell
+# 1. Copiar templates
+Copy-Item init-scripts\01-init.sql.example init-scripts\01-init.sql
+
+# 2. Editar con tus schemas/tablas
+notepad init-scripts\01-init.sql
+
+# 3. Los scripts se ejecutan al crear el contenedor
+docker-compose -f templates/production.yml up -d
+```
+
+### 🔐 Seguridad en Producción
+
+**⚠️ CHECKLIST ANTES DE PRODUCCIÓN:**
+
+- [ ] Cambiar `POSTGRES_PASSWORD` por contraseña fuerte (16+ caracteres)
+- [ ] Cambiar credenciales de Grafana (`GF_SECURITY_ADMIN_PASSWORD`)
+- [ ] Revisar `pg_hba.conf` para restringir IPs permitidas
+- [ ] Habilitar SSL/TLS en PostgreSQL
+- [ ] No exponer puertos `5432`, `9090`, `3000` públicamente
+- [ ] Configurar backups automáticos
+- [ ] Configurar alertas en Grafana para métricas críticas
+- [ ] Configurar retención de logs (`log_rotation_age`)
 
 ---
 
@@ -234,92 +382,210 @@ services:
 
 ### Gestión de Contenedores
 
-```bash
-# Ver logs
+```powershell
+# Ver estado de todos los servicios
+docker-compose -f templates/production.yml ps
+
+# Ver logs en tiempo real
 docker-compose -f templates/production.yml logs -f
 
 # Ver logs de un servicio específico
-docker-compose -f templates/production.yml logs -f postgres
+docker logs postgres_prod -f
+docker logs prometheus_prod -f
+docker logs grafana_prod -f
 
 # Reiniciar servicios
 docker-compose -f templates/production.yml restart
 
-# Detener servicios
+# Detener servicios (mantiene datos)
 docker-compose -f templates/production.yml stop
 
-# Eliminar todo (⚠️ borra volúmenes)
+# Eliminar servicios (⚠️ mantiene volúmenes)
+docker-compose -f templates/production.yml down
+
+# Eliminar TODO incluyendo datos (⚠️⚠️⚠️ DESTRUCTIVO)
 docker-compose -f templates/production.yml down -v
 ```
 
-### PostgreSQL
+### Gestión de PostgreSQL
 
-```bash
-# Conectar a PostgreSQL
+```powershell
+# Conectar a PostgreSQL desde CLI
 docker exec -it postgres_prod psql -U myuser -d mydatabase
 
-# Backup
-docker exec postgres_prod pg_dump -U myuser mydatabase > backup.sql
+# Ejecutar query desde PowerShell
+docker exec postgres_prod psql -U myuser -d mydatabase -c "SELECT version();"
 
-# Restaurar
-docker exec -i postgres_prod psql -U myuser mydatabase < backup.sql
+# Ver configuración actual
+docker exec postgres_prod psql -U myuser -d mydatabase -c "SHOW shared_buffers;"
 
-# Ver configuración activa
-docker exec postgres_prod psql -U myuser -d mydatabase -c "SHOW ALL;"
+# Backup completo
+docker exec postgres_prod pg_dump -U myuser mydatabase > backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').sql
+
+# Restaurar backup
+Get-Content backup_20260113_143000.sql | docker exec -i postgres_prod psql -U myuser mydatabase
+
+# Vacuuming manual
+docker exec postgres_prod psql -U myuser -d mydatabase -c "VACUUM ANALYZE;"
 ```
 
-### Monitoreo
+### Monitoreo y Debugging
 
-```bash
+```powershell
 # Ver métricas raw del exporter
-curl http://localhost:9187/metrics | grep pg_
+Invoke-WebRequest http://localhost:9187/metrics
 
-# Ver targets de Prometheus
-curl http://localhost:9090/api/v1/targets | jq
+# Ver solo métricas de PostgreSQL
+Invoke-WebRequest http://localhost:9187/metrics | Select-String "pg_"
 
-# Reload Prometheus (sin reiniciar)
-curl -X POST http://localhost:9090/-/reload
+# Verificar estado del exporter
+Invoke-WebRequest http://localhost:9187/metrics | Select-String "pg_up"
+
+# Ver targets en Prometheus
+Start-Process http://localhost:9090/targets
+
+# Verificar que Grafana esté conectado a Prometheus
+Start-Process http://localhost:3000/datasources
 ```
+
+### 🔄 Generador de Actividad para Testing
+
+Para probar los dashboards con datos realistas, usa el generador de actividad:
+
+```powershell
+# Generar actividad durante 10 minutos
+.\templates\activity-10min.ps1
+
+# El script genera automáticamente:
+# - 15 INSERTs cada 10 segundos
+# - 5 UPDATEs cada 10 segundos
+# - 3 DELETEs cada 10 segundos
+# - Progreso mostrado en consola con estadísticas
+```
+
+**Características:**
+- ✅ Crea tabla `pedidos` automáticamente si no existe
+- ✅ Genera datos de prueba realistas (órdenes con totales)
+- ✅ Muestra progreso en tiempo real
+- ✅ Duración: 10 minutos (60 iteraciones × 10s)
+- ✅ Ideal para validar dashboards de Tablas e Índices
+
+**Resultados esperados:**
+```
+Iteración 60/60 completada
+Total de inserts: ~900
+Total de updates: ~300
+Total de deletes: ~180
+Tabla final: ~720 registros
+```
+
+**Ver actividad en Grafana:**
+- Dashboard: **02 - PostgreSQL Tablas e Índices**
+- Paneles: Sequential Scans, Inserts/s, Updates/s, Deletes/s
+- Refresh: 10 segundos
 
 ---
 
 ## 🐛 Troubleshooting
 
-### PostgreSQL no inicia
+### ❌ PostgreSQL no inicia
 
-```bash
-# Ver logs
+```powershell
+# Ver logs del contenedor
 docker logs postgres_prod
 
-# Problemas comunes:
-# - POSTGRES_PASSWORD no definida
-# - Puerto 5432 ya en uso
-# - Falta de memoria (shared_buffers muy alto)
-# - Permisos en volúmenes
+# Problemas comunes y soluciones:
 ```
 
-### Grafana no muestra datos
+**Problema:** `database system was not properly shut down`  
+**Solución:** Reiniciar el contenedor: `docker restart postgres_prod`
 
-```bash
-# 1. Verificar que Prometheus esté UP
-curl http://localhost:9090/-/healthy
+**Problema:** `port 5432 is already allocated`  
+**Solución:** Cambiar puerto en `.env`: `POSTGRES_PORT=5433`
 
-# 2. Verificar targets
-# Ir a: http://localhost:9090/targets
-# postgres-exporter debe estar UP
+**Problema:** `FATAL: password authentication failed`  
+**Solución:** Verificar `POSTGRES_PASSWORD` en `.env` o recrear contenedor
 
-# 3. Verificar métricas
-curl http://localhost:9187/metrics | grep pg_up
+**Problema:** `shared_buffers too large`  
+**Solución:** Reducir `POSTGRES_SHARED_BUFFERS` o aumentar RAM del sistema
 
-# 4. Verificar datasource en Grafana
-# Configuration → Data Sources → Prometheus → Test
+### ❌ Grafana muestra "No data"
+
+**1. Verificar que Prometheus esté funcionando:**
+```powershell
+Invoke-WebRequest http://localhost:9090/-/healthy
+# Debe responder: "Prometheus is Healthy."
 ```
 
-### Conflicto de puertos
+**2. Verificar que postgres_exporter esté UP:**
+```powershell
+# Ir a http://localhost:9090/targets
+# "postgres-exporter" debe estar State: UP
+```
 
-```bash
-# Error: port is already allocated
-# Solución 1: Cambiar puerto en .env
-POSTGRES_PORT=5433
+**3. Verificar métricas disponibles:**
+```powershell
+Invoke-WebRequest http://localhost:9187/metrics | Select-String "pg_up"
+# Debe mostrar: pg_up 1
+```
+
+**4. Verificar datasource en Grafana:**
+- Ir a: `Configuration → Data Sources → Prometheus`
+- Click **"Test"** → Debe mostrar "Data source is working"
+
+**5. Reiniciar Grafana:**
+```powershell
+docker-compose -f templates/production.yml restart grafana
+```
+
+### ❌ Métricas de configuración no aparecen
+
+**Solución:** Verificar que `PG_EXPORTER_DISABLE_SETTINGS_METRICS=false`
+
+```powershell
+# Ver variables del exporter
+docker exec postgres_exporter_prod env | Select-String "PG_EXPORTER"
+```
+
+---
+
+## 📚 Documentación Adicional
+
+- [QUICK-START.md](QUICK-START.md) - Guía rápida de inicio
+- [STRUCTURE.md](STRUCTURE.md) - Documentación técnica detallada
+- [METRICAS-DISPONIBLES.md](METRICAS-DISPONIBLES.md) - Catálogo de 350+ métricas
+- [templates/README.md](templates/README.md) - Comparativa de plantillas
+- [config/README.md](config/README.md) - Guía de configuración de PostgreSQL
+- [grafana/README.md](grafana/README.md) - Guía de dashboards
+- [init-scripts/README.md](init-scripts/README.md) - Scripts de inicialización
+
+---
+
+## 🤝 Contribuir
+
+Mejoras y sugerencias son bienvenidas:
+
+1. Fork del proyecto
+2. Crear rama feature: `git checkout -b feature/mejora`
+3. Commit cambios: `git commit -m 'Add: nueva funcionalidad'`
+4. Push a la rama: `git push origin feature/mejora`
+5. Abrir Pull Request
+
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo licencia MIT. Ver archivo [LICENCE](../LICENCE) para más detalles.
+
+---
+
+## 🙋 Soporte
+
+- **Documentación:** Revisa los archivos `.md` en cada carpeta
+- **Issues:** Reporta problemas en GitHub Issues
+- **PostgreSQL Docs:** https://www.postgresql.org/docs/17/
+- **Prometheus Docs:** https://prometheus.io/docs/
+- **Grafana Docs:** https://grafana.com/docs/
 GRAFANA_PORT=3001
 
 # Solución 2: Detener otros contenedores
@@ -378,10 +644,11 @@ Registros marcados para eliminar. **Alto valor** = necesita VACUUM.
 
 ### v2.0.0 - 2026-01-13
 - ✨ Agregadas 4 plantillas pre-configuradas
-- ✨ 5 dashboards de Grafana incluidos
+- ✨ 6 dashboards de Grafana incluidos (+ Checkpoints para PG 17)
 - ✨ 13 categorías de métricas custom
 - ✨ Documentación completa reestructurada
 - ✨ Soporte completo para variables de entorno
+- ✨ Configuración organizada en carpetas (config/)
 - 🔧 Reestructuración completa del proyecto
 - 🗑️ Eliminados archivos duplicados
 

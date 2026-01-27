@@ -12,10 +12,10 @@ services:
     container_name: postgres_prod
     hostname: postgres-prod
     environment:
-      # Credenciales (USAR SECRETS EN PRODUCCIÓN REAL)
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB:-production_db}
+      # Credenciales básicas (usar postgres por defecto, prod_user se crea en init scripts)
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_pass_secure_123
+      POSTGRES_DB: postgres
       
       # Configuración de producción (alta performance)
       POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-2GB}
@@ -44,28 +44,59 @@ services:
       # Logging (solo errores y queries lentas)
       POSTGRES_LOG_STATEMENT: ${POSTGRES_LOG_STATEMENT:-none}
       POSTGRES_LOG_MIN_DURATION_STATEMENT: ${POSTGRES_LOG_MIN_DURATION_STATEMENT:-1000}
-      POSTGRES_LOG_LINE_PREFIX: ${POSTGRES_LOG_LINE_PREFIX:-%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h }
+      POSTGRES_LOG_LINE_PREFIX: "{POSTGRES_LOG_LINE_PREFIX:-%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h"
       
       # Seguridad
       POSTGRES_HOST_AUTH_METHOD: ${POSTGRES_HOST_AUTH_METHOD:-scram-sha-256}
       POSTGRES_INITDB_ARGS: ${POSTGRES_INITDB_ARGS:---auth-host=scram-sha-256 --encoding=UTF8 --locale=C}
     
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5434:5432"  # Production
     
     volumes:
       # Datos persistentes (considerar almacenamiento SSD/NVMe)
       - postgres_prod_data:/var/lib/postgresql/data
       
-      # Configuración personalizada (opcional)
-      # - ../config/postgresql.conf:/etc/postgresql/postgresql.conf
-      # - ../config/pg_hba.conf:/var/lib/postgresql/data/pg_hba.conf
+      # Configuración personalizada de PostgreSQL (comentado para usar defaults)
+      # - ../config/postgresql/active/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      # - ../config/postgresql/active/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      
+      # Scripts de inicialización automática
+      - ../init-scripts/00-create-prod-user.sql:/docker-entrypoint-initdb.d/00-create-prod-user.sql:ro
+      - ../init-scripts/00-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql:ro
+      - ../init-scripts/01-monitoring-user.sql:/docker-entrypoint-initdb.d/02-monitoring-user.sql:ro
       
       # Backups (montar volumen para backups)
       # - postgres_prod_backups:/backups
     
+    # Comando con configuraciones inline (sin archivos externos por ahora)
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=2GB"
+      - "-c"
+      - "effective_cache_size=6GB"
+      - "-c"
+      - "work_mem=64MB"
+      - "-c"
+      - "maintenance_work_mem=512MB"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "checkpoint_timeout=15min"
+      - "-c"
+      - "max_wal_size=4GB"
+      - "-c"
+      - "shared_preload_libraries=pg_stat_statements"
+      - "-c"
+      - "track_io_timing=on"
+      - "-c"
+      - "track_activities=on"
+      - "-c"
+      - "track_counts=on"
+    
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB:-production_db}"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -85,24 +116,23 @@ services:
         reservations:
           cpus: "${POSTGRES_CPU_RESERVATION:-2.0}"
           memory: "${POSTGRES_MEMORY_RESERVATION:-4G}"
-
+          
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres_exporter_prod
     hostname: postgres-exporter-prod
     environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-production_db}?sslmode=require"
+      DATA_SOURCE_NAME: "postgresql://exporter:exporter_pass_secure_123@postgres:5432/postgres?sslmode=disable"
       PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres-exporter/queries.yaml"
       PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
       PG_EXPORTER_DISABLE_SETTINGS_METRICS: "false"
-      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "true"
-      PG_EXPORTER_EXCLUDE_DATABASES: "template0,template1"
+      PG_EXPORTER_AUTO_DISCOVER_DATABASES: "false"
     
     ports:
-      - "${EXPORTER_PORT:-9187}:9187"
+      - "9189:9187"  # Exporter Production  # Production
     
     volumes:
-      - ../postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+      - ../config/queries/postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
     
     depends_on:
       postgres:
@@ -134,10 +164,10 @@ services:
       - "--storage.tsdb.wal-compression"
     
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "9092:9090"  # Prometheus Production  # Production
     
     volumes:
-      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../config/prometheus/prod.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_prod_data:/prometheus
       # - ./prometheus/rules:/etc/prometheus/rules:ro  # Reglas de alertas
     
@@ -163,9 +193,9 @@ services:
     container_name: grafana_prod
     hostname: grafana-prod
     environment:
-      # Credenciales admin (USAR SECRETS)
-      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER}
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD}
+      # Credenciales admin (para prueba - cambiar en producción)
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
       
       # Seguridad
       GF_USERS_ALLOW_SIGN_UP: "false"
@@ -182,9 +212,9 @@ services:
       
       # Servidor
       GF_SERVER_HTTP_PORT: "3000"
-      GF_SERVER_DOMAIN: ${GF_SERVER_DOMAIN}
-      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL}
-      GF_SERVER_ENFORCE_DOMAIN: "true"
+      GF_SERVER_DOMAIN: localhost
+      GF_SERVER_ROOT_URL: http://localhost:3002
+      GF_SERVER_ENFORCE_DOMAIN: "false"
       
       # Logging
       GF_LOG_LEVEL: ${GF_LOG_LEVEL:-info}
@@ -198,12 +228,11 @@ services:
       # GF_SMTP_FROM_ADDRESS: ${GF_SMTP_FROM_ADDRESS}
     
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      - "3002:3000"  # Grafana Production
     
     volumes:
-      - grafana_prod_data:/var/lib/grafana
+      - ../data/grafana/production:/var/lib/grafana
       - ../grafana/provisioning:/etc/grafana/provisioning:ro
-      # - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     
     depends_on:
       - prometheus
@@ -222,10 +251,6 @@ services:
 volumes:
   postgres_prod_data:
     driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ${POSTGRES_DATA_PATH:-./data/postgres}
   
   prometheus_prod_data:
     driver: local
@@ -233,9 +258,6 @@ volumes:
       type: none
       o: bind
       device: ${PROMETHEUS_DATA_PATH:-./data/prometheus}
-  
-  grafana_prod_data:
-    driver: local
 
 networks:
   prod_network:
@@ -243,7 +265,7 @@ networks:
     name: prod_network
     ipam:
       config:
-        - subnet: ${NETWORK_SUBNET:-172.20.0.0/16}
+        - subnet: 192.168.100.0/24
 
 # ====================================================================================
 # CONFIGURACIÓN EXPLICADA

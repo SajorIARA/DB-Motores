@@ -1,0 +1,45 @@
+# Variables de entorno (contienen credenciales)
+.env
+.env.*
+!.env.example
+
+# Secrets
+secrets/
+*.key
+*.pem
+*.crt
+
+# Datos de MySQL
+mysql-data/
+data/
+mysqldata/
+
+# Backups locales
+backups/
+*.sql
+*.dump
+*.backup
+
+# Archivos de configuración con credenciales
+my.cnf
+!my.cnf.example
+
+# Scripts personalizados con datos sensibles
+init-scripts/*.sql
+init-scripts/*.sh
+!init-scripts/*.example
+
+# Logs
+logs/
+*.log
+
+# IDEs y editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

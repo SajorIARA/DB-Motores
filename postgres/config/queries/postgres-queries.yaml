@@ -1,0 +1,350 @@
+# ====================================================================================
+# MÉTRICAS PERSONALIZADAS SEGURAS PARA POSTGRESQL 17
+# ====================================================================================
+# Este archivo contiene solo queries que NO causan conflictos con el exporter
+# Compatible con dashboards de la comunidad y PostgreSQL 17
+# ====================================================================================
+
+# ====================================================================================
+# 1. CONEXIONES AGRUPADAS POR ESTADO Y BASE DE DATOS
+# ====================================================================================
+pg_connections_by_state:
+  query: |
+    SELECT
+      COALESCE(datname, 'unknown') as database_name,
+      COALESCE(state, 'unknown') as state,
+      COUNT(*) as connection_count
+    FROM pg_stat_activity
+    WHERE datname IS NOT NULL
+    GROUP BY datname, state
+  metrics:
+    - database_name:
+        usage: "LABEL"
+        description: "Nombre de la base de datos"
+    - state:
+        usage: "LABEL"
+        description: "Estado de la conexión (active, idle, idle in transaction)"
+    - connection_count:
+        usage: "GAUGE"
+        description: "Número de conexiones en este estado"
+
+# ====================================================================================
+# 2. QUERIES LENTAS (Más de 5 segundos)
+# ====================================================================================
+pg_slow_queries:
+  query: |
+    SELECT
+      COALESCE(datname, 'unknown') as database_name,
+      COALESCE(usename, 'unknown') as username,
+      COALESCE(application_name, 'unknown') as application_name,
+      COALESCE(state, 'unknown') as state,
+      EXTRACT(EPOCH FROM (NOW() - query_start)) as query_duration_seconds,
+      LEFT(COALESCE(query, 'N/A'), 100) as query_snippet
+    FROM pg_stat_activity
+    WHERE state = 'active'
+      AND query_start < NOW() - INTERVAL '5 seconds'
+      AND query NOT LIKE '%pg_stat_activity%'
+      AND datname IS NOT NULL
+    ORDER BY query_start
+  metrics:
+    - database_name:
+        usage: "LABEL"
+        description: "Base de datos"
+    - username:
+        usage: "LABEL"
+        description: "Usuario ejecutando la query"
+    - application_name:
+        usage: "LABEL"
+        description: "Aplicación"
+    - state:
+        usage: "LABEL"
+        description: "Estado de la query"
+    - query_duration_seconds:
+        usage: "GAUGE"
+        description: "Duración de la query en segundos"
+    - query_snippet:
+        usage: "LABEL"
+        description: "Primeros 100 caracteres de la query"
+
+# ====================================================================================
+# 3. TAMAÑO DE BASES DE DATOS
+# ====================================================================================
+pg_database_size:
+  query: |
+    SELECT
+      datname as database_name,
+      pg_database_size(datname) as size_bytes
+    FROM pg_database
+    WHERE datname IS NOT NULL
+      AND datname NOT IN ('template0', 'template1')
+  metrics:
+    - database_name:
+        usage: "LABEL"
+        description: "Nombre de la base de datos"
+    - size_bytes:
+        usage: "GAUGE"
+        description: "Tamaño total de la base de datos en bytes"
+
+# ====================================================================================
+# 4. TAMAÑO DE TABLAS (TOP 20)
+# ====================================================================================
+pg_table_sizes:
+  query: |
+    SELECT
+      schemaname as schema_name,
+      tablename as table_name,
+      pg_total_relation_size(schemaname||'.'||tablename) as total_size_bytes,
+      pg_relation_size(schemaname||'.'||tablename) as table_size_bytes
+    FROM pg_tables
+    WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+    ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+    LIMIT 20
+  metrics:
+    - schema_name:
+        usage: "LABEL"
+        description: "Esquema"
+    - table_name:
+        usage: "LABEL"
+        description: "Nombre de la tabla"
+    - total_size_bytes:
+        usage: "GAUGE"
+        description: "Tamaño total (tabla + índices) en bytes"
+    - table_size_bytes:
+        usage: "GAUGE"
+        description: "Tamaño solo de la tabla en bytes"
+
+# ====================================================================================
+# 5. ESTADÍSTICAS DE TABLAS (TOP 20 más usadas)
+# ====================================================================================
+pg_table_stats:
+  query: |
+    SELECT
+      schemaname as schema_name,
+      relname as table_name,
+      seq_scan as sequential_scans,
+      COALESCE(idx_scan, 0) as index_scans,
+      n_live_tup as live_tuples,
+      n_dead_tup as dead_tuples,
+      CASE 
+        WHEN n_live_tup > 0 
+        THEN (n_dead_tup::float / n_live_tup) * 100 
+        ELSE 0 
+      END as dead_tuple_ratio
+    FROM pg_stat_user_tables
+    ORDER BY (seq_scan + COALESCE(idx_scan, 0)) DESC
+    LIMIT 20
+  metrics:
+    - schema_name:
+        usage: "LABEL"
+        description: "Esquema de la tabla"
+    - table_name:
+        usage: "LABEL"
+        description: "Nombre de la tabla"
+    - sequential_scans:
+        usage: "COUNTER"
+        description: "Número de escaneos secuenciales (alto = falta índice)"
+    - index_scans:
+        usage: "COUNTER"
+        description: "Número de escaneos por índice"
+    - live_tuples:
+        usage: "GAUGE"
+        description: "Número de tuplas vivas"
+    - dead_tuples:
+        usage: "GAUGE"
+        description: "Número de tuplas muertas (necesitan VACUUM)"
+    - dead_tuple_ratio:
+        usage: "GAUGE"
+        description: "Porcentaje de tuplas muertas (alerta si > 20%)"
+
+# ====================================================================================
+# 6. ÍNDICES NO UTILIZADOS (Candidatos para eliminar)
+# ====================================================================================
+pg_unused_indexes:
+  query: |
+    SELECT
+      schemaname as schema_name,
+      relname as table_name,
+      indexrelname as index_name,
+      COALESCE(idx_scan, 0) as index_scans,
+      pg_relation_size(indexrelid) as index_size_bytes
+    FROM pg_stat_user_indexes
+    WHERE idx_scan = 0
+      AND indexrelname NOT LIKE '%pkey'
+    ORDER BY pg_relation_size(indexrelid) DESC
+    LIMIT 20
+  metrics:
+    - schema_name:
+        usage: "LABEL"
+        description: "Esquema"
+    - table_name:
+        usage: "LABEL"
+        description: "Tabla"
+    - index_name:
+        usage: "LABEL"
+        description: "Nombre del índice"
+    - index_scans:
+        usage: "GAUGE"
+        description: "Veces usado (0 = nunca usado)"
+    - index_size_bytes:
+        usage: "GAUGE"
+        description: "Tamaño del índice en bytes"
+
+# ====================================================================================
+# 7. LOCKS Y BLOQUEOS ACTIVOS
+# ====================================================================================
+pg_locks_active:
+  query: |
+    SELECT
+      COALESCE(datname, 'unknown') as database_name,
+      COALESCE(locktype, 'unknown') as locktype,
+      COALESCE(mode, 'unknown') as mode,
+      granted::text as granted,
+      COUNT(*) as lock_count
+    FROM pg_locks
+    LEFT JOIN pg_stat_activity ON pg_locks.pid = pg_stat_activity.pid
+    WHERE datname IS NOT NULL
+    GROUP BY datname, locktype, mode, granted
+  metrics:
+    - database_name:
+        usage: "LABEL"
+        description: "Base de datos"
+    - locktype:
+        usage: "LABEL"
+        description: "Tipo de lock (relation, tuple, etc.)"
+    - mode:
+        usage: "LABEL"
+        description: "Modo del lock (AccessShare, RowExclusive, etc.)"
+    - granted:
+        usage: "LABEL"
+        description: "Si el lock fue concedido (true/false)"
+    - lock_count:
+        usage: "GAUGE"
+        description: "Número de locks de este tipo"
+
+# ====================================================================================
+# 8. CHECKPOINTS (PostgreSQL 17+)
+# ====================================================================================
+pg_checkpointer:
+  query: |
+    SELECT
+      num_timed as checkpoints_scheduled,
+      num_requested as checkpoints_requested,
+      write_time as write_time_ms,
+      sync_time as sync_time_ms,
+      buffers_written as buffers_written
+    FROM pg_stat_checkpointer
+  metrics:
+    - checkpoints_scheduled:
+        usage: "COUNTER"
+        description: "Checkpoints programados (por tiempo)"
+    - checkpoints_requested:
+        usage: "COUNTER"
+        description: "Checkpoints solicitados (por carga, alerta si muy alto)"
+    - write_time_ms:
+        usage: "COUNTER"
+        description: "Tiempo gastado escribiendo checkpoints (ms)"
+    - sync_time_ms:
+        usage: "COUNTER"
+        description: "Tiempo gastado sincronizando checkpoints (ms)"
+    - buffers_written:
+        usage: "COUNTER"
+        description: "Buffers escritos durante checkpoints"
+
+# ====================================================================================
+# 9. PROGRESO DE VACUUM (si hay alguno corriendo)
+# ====================================================================================
+pg_vacuum_progress:
+  query: |
+    SELECT
+      pg_database.datname as database_name,
+      relid::regclass::text as table_name,
+      COALESCE(phase, 'unknown') as phase,
+      heap_blks_total as total_blocks,
+      heap_blks_scanned as scanned_blocks,
+      CASE 
+        WHEN heap_blks_total > 0 
+        THEN (heap_blks_scanned::float / heap_blks_total) * 100 
+        ELSE 0 
+      END as progress_percent
+    FROM pg_stat_progress_vacuum
+    JOIN pg_database ON pg_stat_progress_vacuum.datid = pg_database.oid
+  metrics:
+    - database_name:
+        usage: "LABEL"
+        description: "Base de datos"
+    - table_name:
+        usage: "LABEL"
+        description: "Tabla siendo procesada"
+    - phase:
+        usage: "LABEL"
+        description: "Fase del VACUUM"
+    - total_blocks:
+        usage: "GAUGE"
+        description: "Bloques totales"
+    - scanned_blocks:
+        usage: "GAUGE"
+        description: "Bloques escaneados"
+    - progress_percent:
+        usage: "GAUGE"
+        description: "Porcentaje de progreso"
+
+# ====================================================================================
+# 10. REPLICACIÓN (Si está configurada)
+# ====================================================================================
+pg_replication:
+  query: |
+    SELECT
+      COALESCE(application_name, 'unknown') as application_name,
+      COALESCE(client_addr::text, 'unknown') as replica_address,
+      COALESCE(state, 'unknown') as replication_state,
+      COALESCE(sync_state, 'unknown') as sync_state,
+      EXTRACT(EPOCH FROM (NOW() - backend_start)) as connection_age_seconds,
+      COALESCE(EXTRACT(EPOCH FROM replay_lag), 0) as replay_lag_seconds,
+      COALESCE(EXTRACT(EPOCH FROM write_lag), 0) as write_lag_seconds
+    FROM pg_stat_replication
+  metrics:
+    - application_name:
+        usage: "LABEL"
+        description: "Nombre de la réplica"
+    - replica_address:
+        usage: "LABEL"
+        description: "Dirección IP de la réplica"
+    - replication_state:
+        usage: "LABEL"
+        description: "Estado de replicación (streaming, catchup, etc.)"
+    - sync_state:
+        usage: "LABEL"
+        description: "Estado de sincronización (sync, async, etc.)"
+    - connection_age_seconds:
+        usage: "GAUGE"
+        description: "Tiempo desde que se conectó la réplica"
+    - replay_lag_seconds:
+        usage: "GAUGE"
+        description: "Lag de replay en segundos"
+    - write_lag_seconds:
+        usage: "GAUGE"
+        description: "Lag de escritura en segundos"
+
+# ====================================================================================
+# FIN DEL ARCHIVO
+# ====================================================================================
+# 
+# NOTAS IMPORTANTES:
+# 
+# 1. TODAS las queries están diseñadas para NO causar errores:
+#    - Valores numéricos → GAUGE o COUNTER
+#    - Valores de texto → LABEL
+#    - Uso de COALESCE para evitar NULLs
+# 
+# 2. Compatible con PostgreSQL 17
+# 
+# 3. Las métricas por defecto del exporter YA incluyen:
+#    - pg_settings_* (configuración)
+#    - pg_stat_database_* (estadísticas completas de BD)
+#    - pg_stat_activity_* (actividad y conexiones)
+#    - pg_stat_bgwriter_* (background writer)
+#    - Y muchas más...
+# 
+# 4. Para verificar: curl http://localhost:9187/metrics | grep pg_
+# 
+# ====================================================================================

@@ -13,62 +13,92 @@ services:
     hostname: postgres-analytics
     environment:
       # Credenciales
-      POSTGRES_USER: ${POSTGRES_USER:-analytics_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-analytics_pass_456}
-      POSTGRES_DB: ${POSTGRES_DB:-analytics_db}
+      POSTGRES_USER: analytics_user
+      POSTGRES_PASSWORD: analytics_pass_456
+      POSTGRES_DB: analytics_db
       
       # Configuración para análisis (optimizada para lecturas)
-      POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-1GB}
-      POSTGRES_EFFECTIVE_CACHE_SIZE: ${POSTGRES_EFFECTIVE_CACHE_SIZE:-3GB}
-      POSTGRES_WORK_MEM: ${POSTGRES_WORK_MEM:-128MB}  # Alto para queries complejas
-      POSTGRES_MAINTENANCE_WORK_MEM: ${POSTGRES_MAINTENANCE_WORK_MEM:-256MB}
-      POSTGRES_MAX_CONNECTIONS: ${POSTGRES_MAX_CONNECTIONS:-50}
+      POSTGRES_SHARED_BUFFERS: 1GB
+      POSTGRES_EFFECTIVE_CACHE_SIZE: 3GB
+      POSTGRES_WORK_MEM: 128MB  # Alto para queries complejas
+      POSTGRES_MAINTENANCE_WORK_MEM: 256MB
+      POSTGRES_MAX_CONNECTIONS: 50
       
       # WAL y Checkpoints (menos crítico en analytics)
-      POSTGRES_CHECKPOINT_TIMEOUT: ${POSTGRES_CHECKPOINT_TIMEOUT:-10min}
-      POSTGRES_MAX_WAL_SIZE: ${POSTGRES_MAX_WAL_SIZE:-2GB}
+      POSTGRES_CHECKPOINT_TIMEOUT: 10min
+      POSTGRES_MAX_WAL_SIZE: 2GB
       
       # Optimización para SSD y lecturas
-      POSTGRES_RANDOM_PAGE_COST: ${POSTGRES_RANDOM_PAGE_COST:-1.1}
-      POSTGRES_EFFECTIVE_IO_CONCURRENCY: ${POSTGRES_EFFECTIVE_IO_CONCURRENCY:-200}
-      POSTGRES_MAX_WORKER_PROCESSES: ${POSTGRES_MAX_WORKER_PROCESSES:-8}
-      POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER: ${POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER:-4}
-      POSTGRES_MAX_PARALLEL_WORKERS: ${POSTGRES_MAX_PARALLEL_WORKERS:-8}
+      POSTGRES_RANDOM_PAGE_COST: 1.1
+      POSTGRES_EFFECTIVE_IO_CONCURRENCY: 200
+      POSTGRES_MAX_WORKER_PROCESSES: 8
+      POSTGRES_MAX_PARALLEL_WORKERS_PER_GATHER: 4
+      POSTGRES_MAX_PARALLEL_WORKERS: 8
       
       # Query Planner optimizado para analytics
-      POSTGRES_DEFAULT_STATISTICS_TARGET: ${POSTGRES_DEFAULT_STATISTICS_TARGET:-500}  # Muy alto
-      POSTGRES_FROM_COLLAPSE_LIMIT: ${POSTGRES_FROM_COLLAPSE_LIMIT:-16}
-      POSTGRES_JOIN_COLLAPSE_LIMIT: ${POSTGRES_JOIN_COLLAPSE_LIMIT:-16}
+      POSTGRES_DEFAULT_STATISTICS_TARGET: 500  # Muy alto
+      POSTGRES_FROM_COLLAPSE_LIMIT: 16
+      POSTGRES_JOIN_COLLAPSE_LIMIT: 16
       
       # Configuración para queries largas
-      POSTGRES_STATEMENT_TIMEOUT: ${POSTGRES_STATEMENT_TIMEOUT:-0}  # Sin timeout
-      POSTGRES_IDLE_IN_TRANSACTION_SESSION_TIMEOUT: ${POSTGRES_IDLE_IN_TRANSACTION_SESSION_TIMEOUT:-30min}
+      POSTGRES_STATEMENT_TIMEOUT: 0  # Sin timeout
+      POSTGRES_IDLE_IN_TRANSACTION_SESSION_TIMEOUT: 30min
       
       # Autovacuum menos agresivo (analytics es principalmente read-only)
-      POSTGRES_AUTOVACUUM_NAPTIME: ${POSTGRES_AUTOVACUUM_NAPTIME:-1min}
-      POSTGRES_AUTOVACUUM_MAX_WORKERS: ${POSTGRES_AUTOVACUUM_MAX_WORKERS:-2}
+      POSTGRES_AUTOVACUUM_NAPTIME: 1min
+      POSTGRES_AUTOVACUUM_MAX_WORKERS: 2
       
       # Logging de queries lentas
-      POSTGRES_LOG_STATEMENT: ${POSTGRES_LOG_STATEMENT:-none}
-      POSTGRES_LOG_MIN_DURATION_STATEMENT: ${POSTGRES_LOG_MIN_DURATION_STATEMENT:-5000}  # > 5 segundos
-      POSTGRES_LOG_LINE_PREFIX: ${POSTGRES_LOG_LINE_PREFIX:-%t [%p]: [%l-1] user=%u,db=%d }
+      POSTGRES_LOG_STATEMENT: none
+      POSTGRES_LOG_MIN_DURATION_STATEMENT: 5000  # > 5 segundos
+      POSTGRES_LOG_LINE_PREFIX: "%t [%p]: [%l-1] user=%u,db=%d"
       
       # Extensiones útiles para analytics
       # pg_stat_statements, pg_trgm, btree_gin, btree_gist
     
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "5435:5432"  # Analytics
     
     volumes:
       # Datos persistentes
       - postgres_analytics_data:/var/lib/postgresql/data
       
-      # Scripts de inicialización para analytics (opcional)
-      # - ../init-scripts/analytics/01-extensions.sql:/docker-entrypoint-initdb.d/01-extensions.sql
-      # - ../init-scripts/analytics/02-indexes.sql:/docker-entrypoint-initdb.d/02-indexes.sql
+      # Scripts de inicialización automática
+      - ../init-scripts/00-extensions.sql:/docker-entrypoint-initdb.d/00-extensions.sql:ro
+      - ../init-scripts/01-monitoring-user.sql:/docker-entrypoint-initdb.d/01-monitoring-user.sql:ro
+      # Scripts personalizados para analytics (opcional)
+      # - ../init-scripts/01-init.sql.example:/docker-entrypoint-initdb.d/02-init.sql
+    
+    # Comando con configuraciones inline
+    command:
+      - "postgres"
+      - "-c"
+      - "shared_buffers=1GB"
+      - "-c"
+      - "effective_cache_size=3GB"
+      - "-c"
+      - "work_mem=128MB"
+      - "-c"
+      - "maintenance_work_mem=256MB"
+      - "-c"
+      - "max_connections=50"
+      - "-c"
+      - "checkpoint_timeout=10min"
+      - "-c"
+      - "max_wal_size=2GB"
+      - "-c"
+      - "random_page_cost=1.1"
+      - "-c"
+      - "effective_io_concurrency=200"
+      - "-c"
+      - "max_worker_processes=8"
+      - "-c"
+      - "max_parallel_workers_per_gather=4"
+      - "-c"
+      - "max_parallel_workers=8"
     
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-analytics_user} -d ${POSTGRES_DB:-analytics_db}"]
+      test: ["CMD-SHELL", "pg_isready -U analytics_user -d analytics_db"]
       interval: 20s
       timeout: 10s
       retries: 5
@@ -83,31 +113,30 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "${POSTGRES_CPU_LIMIT:-4.0}"
-          memory: "${POSTGRES_MEMORY_LIMIT:-4G}"
+          cpus: "4.0"
+          memory: "4G"
         reservations:
-          cpus: "${POSTGRES_CPU_RESERVATION:-2.0}"
-          memory: "${POSTGRES_MEMORY_RESERVATION:-2G}"
-
+          cpus: "2.0"
+          memory: "2G"
   postgres-exporter:
     image: prometheuscommunity/postgres-exporter:latest
     container_name: postgres_exporter_analytics
     hostname: postgres-exporter-analytics
     environment:
-      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-analytics_user}:${POSTGRES_PASSWORD:-analytics_pass_456}@postgres:5432/${POSTGRES_DB:-analytics_db}?sslmode=disable"
+      DATA_SOURCE_NAME: "postgresql://analytics_user:analytics_pass_456@postgres:5432/analytics_db?sslmode=disable"
       PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres-exporter/queries.yaml"
       PG_EXPORTER_DISABLE_DEFAULT_METRICS: "false"
       PG_EXPORTER_DISABLE_SETTINGS_METRICS: "false"
       
       # Métricas adicionales útiles para analytics
-      PG_EXPORTER_INCLUDE_DATABASES: ${PG_EXPORTER_INCLUDE_DATABASES:-.*}
+      PG_EXPORTER_INCLUDE_DATABASES: ".*"
       PG_EXPORTER_EXCLUDE_DATABASES: "template0,template1"
     
     ports:
-      - "${EXPORTER_PORT:-9187}:9187"
+      - "9190:9187"  # Analytics
     
     volumes:
-      - ../postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
+      - ../config/queries/postgres-queries.yaml:/etc/postgres-exporter/queries.yaml:ro
     
     depends_on:
       postgres:
@@ -125,18 +154,18 @@ services:
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
-      - "--storage.tsdb.retention.time=${PROMETHEUS_RETENTION_TIME:-30d}"
-      - "--storage.tsdb.retention.size=${PROMETHEUS_RETENTION_SIZE:-20GB}"
+      - "--storage.tsdb.retention.time=30d"
+      - "--storage.tsdb.retention.size=20GB"
       - "--web.console.libraries=/etc/prometheus/console_libraries"
       - "--web.console.templates=/etc/prometheus/consoles"
       - "--web.enable-lifecycle"
       - "--storage.tsdb.wal-compression"
     
     ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "9093:9090"  # Analytics
     
     volumes:
-      - ../prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../config/prometheus/analytics.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_analytics_data:/prometheus
     
     depends_on:
@@ -153,8 +182,8 @@ services:
     hostname: grafana-analytics
     environment:
       # Credenciales admin
-      GF_SECURITY_ADMIN_USER: ${GF_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GF_ADMIN_PASSWORD:-analytics_admin_789}
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: analytics_admin_789
       
       # Configuración
       GF_USERS_ALLOW_SIGN_UP: "false"
@@ -167,20 +196,20 @@ services:
       
       # Servidor
       GF_SERVER_HTTP_PORT: "3000"
-      GF_SERVER_DOMAIN: ${GF_SERVER_DOMAIN:-localhost}
-      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL:-http://localhost:3000}
+      GF_SERVER_DOMAIN: localhost
+      GF_SERVER_ROOT_URL: http://localhost:3003
       
       # Logging
-      GF_LOG_LEVEL: ${GF_LOG_LEVEL:-info}
+      GF_LOG_LEVEL: info
       
       # Plugins útiles para analytics (opcional)
       # GF_INSTALL_PLUGINS: "grafana-piechart-panel,grafana-worldmap-panel"
     
     ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+      - "3003:3000"
     
     volumes:
-      - grafana_analytics_data:/var/lib/grafana
+      - ../data/grafana/analytics:/var/lib/grafana
       - ../grafana/provisioning:/etc/grafana/provisioning:ro
     
     depends_on:
@@ -196,12 +225,13 @@ volumes:
     driver: local
   prometheus_analytics_data:
     driver: local
-  grafana_analytics_data:
-    driver: local
 
 networks:
   analytics_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.101.0/24
     name: analytics_network
 
 # ====================================================================================

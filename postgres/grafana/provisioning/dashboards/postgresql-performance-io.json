@@ -72,7 +72,7 @@
                                            "refId":  "B"
                                        }
                                    ],
-                       "title":  "Bloques Leó­dos (Disco vs Cache)",
+                       "title":  "Bloques Leí­dos (Disco vs Cache)",
                        "type":  "timeseries"
                    },
                    {
@@ -200,7 +200,7 @@
                                            "refId":  "B"
                                        }
                                    ],
-                       "title":  "Tuplas Leó­das",
+                       "title":  "Tuplas Leídas",
                        "type":  "timeseries"
                    },
                    {

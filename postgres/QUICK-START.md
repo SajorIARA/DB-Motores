@@ -15,13 +15,13 @@ Abre una terminal PowerShell en la carpeta `postgres/` y ejecuta:
 
 ```powershell
 # Menú interactivo para elegir ambiente
-scripts\postgres-manager.ps1
+.\scripts\postgres-manager.ps1
 
 # O scripts individuales:
-scripts\start-development.ps1
-scripts\start-testing.ps1
-scripts\start-production.ps1
-scripts\start-analytics.ps1
+.\scripts\start-development.ps1
+.\scripts\start-testing.ps1
+.\scripts\start-production.ps1
+.\scripts\start-analytics.ps1
 ```
 
 **Ventajas:**
@@ -103,8 +103,8 @@ docker-compose -f templates/development.yml ps
 ## 🔑 Credenciales por Plantilla
 
 ### 🛠️ Development (`development.yml`)
-- **PostgreSQL:** `myuser` / `mypassword` / `mydatabase`
-- **Grafana:** `admin` / `admin`
+- **PostgreSQL:** `dev_user` / `dev_pass_123` / `dev_database`
+- **Grafana:** `admin` / `dev_admin_123`
 - **Recursos:** 128MB shared_buffers, 20 conexiones
 - **Logging:** Activado (queries lentas > 1s)
 

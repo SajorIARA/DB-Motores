@@ -90,7 +90,7 @@ Imagina que una aplicación es como una casa:
 
 **Ejemplo:**
 ```
-postgres:17-alpine
+   postgres:17-alpine
     └─┬──┘ └┬┘ └──┬──┘
       │     │     └── Variante (Alpine Linux = más ligera)
       │     └──────── Versión específica
@@ -748,8 +748,14 @@ Cada motor sigue esta estructura estándar:
 
 ### Software Necesario
 
+**Obligatorio:**
 - **Docker Engine** 20.10 o superior
 - **Docker Compose** v2.0 o superior
+
+**Opcional (para scripts de gestión):**
+- **PowerShell 5.1+** (Windows) o **PowerShell Core 7+** (Linux/Mac)
+
+> **📝 Nota**: Los proyectos incluyen **scripts PowerShell** (`.ps1`) para facilitar la gestión, pero también se pueden usar manualmente con comandos Docker Compose. Los scripts están **optimizados para Windows** pero funcionan en cualquier SO con PowerShell instalado.
 
 ### Instalación
 

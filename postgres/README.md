@@ -10,6 +10,21 @@ Sistema completo de PostgreSQL 17 con monitoreo avanzado mediante Prometheus y v
 
 ---
 
+## 🖥️ Requisitos del Sistema
+
+### **Obligatorios:**
+- ✅ **Docker** y **Docker Compose** (cualquier SO)
+- ✅ **2GB RAM mínimo** (recomendado 4GB+)
+
+### **Scripts de Gestión (Opcional pero Recomendado):**
+- ✅ **Windows**: PowerShell 5.1+ (incluido en Windows 10/11)
+- ✅ **Linux/Mac**: PowerShell Core 7+ ([Instalar aquí](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell))
+- ⚠️ **Alternativa**: Usar comandos Docker Compose directamente (ver sección manual)
+
+> **Nota**: Los scripts `.ps1` están optimizados para **Windows** pero funcionan en cualquier SO con PowerShell Core instalado.
+
+---
+
 ## ✨ Características Principales
 
 - ✅ **PostgreSQL 17 Alpine** - Última versión estable
@@ -65,18 +80,31 @@ En la carpeta `scripts/` tienes utilidades PowerShell para iniciar y gestionar l
 
 ### ¿Cómo ejecutarlos?
 
-1. Abre una terminal PowerShell en la carpeta `postgres/`.
-2. Ejecuta el script deseado, por ejemplo:
-	- `scripts\start-development.ps1`
-	- `scripts\start-production.ps1`
-	- O usa el menú interactivo: `scripts\postgres-manager.ps1`
+**En Windows (PowerShell nativo):**
+```powershell
+# Desde la carpeta postgres/
+scripts\postgres-manager.ps1
+scripts\start-development.ps1
+```
 
-**Ventajas:**
-- No necesitas recordar comandos largos ni rutas.
-- Los scripts muestran mensajes de estado y errores.
-- El script maestro permite gestionar todos los ambientes desde un solo menú.
+**En Linux/Mac (PowerShell Core requerido):**
+```bash
+# Instalar PowerShell Core primero, luego:
+pwsh scripts/postgres-manager.ps1
+pwsh scripts/start-development.ps1
+```
 
-**Requisito:** Tener PowerShell y Docker instalados.
+**Sin PowerShell (manual con Docker Compose):**
+```bash
+# Ver sección "Inicio Manual" más abajo
+docker-compose -f templates/development.yml up -d
+```
+
+**Ventajas de los scripts PowerShell:**
+- ✅ No necesitas recordar comandos largos ni rutas
+- ✅ Muestran mensajes de estado y errores
+- ✅ El script maestro permite gestionar todos los ambientes desde un solo menú
+- ✅ Detección automática de errores y troubleshooting
 
 ---
 
@@ -96,7 +124,7 @@ El script te permite:
 - ✅ Detener/Iniciar servicios fácilmente
 - ✅ Acceso a ayuda y documentación
 
-### Opción 2: Scripts Individuales
+### Opción 2: Scripts Individuales (PowerShell)
 
 ```powershell
 # Development
@@ -112,20 +140,36 @@ scripts/start-production.ps1
 scripts/start-analytics.ps1
 ```
 
-### Opción 3: Docker Compose Manual
+### Opción 3: Docker Compose Manual (Sin PowerShell)
 
-```powershell
+**Usa este método si:**
+- ❌ No tienes PowerShell instalado
+- ❌ Estás en Linux/Mac sin PowerShell Core
+- ✅ Prefieres comandos Docker nativos
+- ✅ Estás automatizando en CI/CD
+
+```bash
 # Navegar al directorio
-cd d:\DB-Motores\postgres
+cd /path/to/DB-Motores/postgres
 
 # Levantar la modalidad deseada
-docker-compose -f templates/development.yml up -d
+docker-compose -f templates/development.yml up -d   # Development
+docker-compose -f templates/testing.yml up -d      # Testing  
+docker-compose -f templates/production.yml up -d   # Production
+docker-compose -f templates/analytics.yml up -d    # Analytics
+
+# Ver estado
+docker-compose -f templates/development.yml ps
+
+# Detener
+docker-compose -f templates/development.yml down
+```
+
+> **💡 Tip**: Los scripts PowerShell son wrappers que ejecutan estos comandos + validaciones adicionales.
 docker-compose -f templates/testing.yml up -d
 docker-compose -f templates/production.yml up -d
 docker-compose -f templates/analytics.yml up -d
-```
 
----
 
 ## 🌐 Acceso a Servicios
 
@@ -141,23 +185,23 @@ docker-compose -f templates/analytics.yml up -d
 |----------|-----|---------|------------|
 | PostgreSQL | `localhost:5432` | `test_user` | `test_pass` |
 | Grafana | http://localhost:3001 | `admin` | `admin` |
-| Prometheus | http://localhost:9090 | - | - |
+| Prometheus | http://localhost:9091 | - | - |
 
 ### Production
 | Servicio | URL | Usuario | Contraseña |
 |----------|-----|---------|------------|
 | PostgreSQL | `localhost:5432` | Ver `.env` | Ver `.env` |
-| Grafana | http://localhost:3000 | Ver `.env` | Ver `.env` |
-| Prometheus | http://localhost:9090 | - | - |
+| Grafana | http://localhost:3002 | Ver `.env` | Ver `.env` |
+| Prometheus | http://localhost:9092 | - | - |
 
 ### Analytics
 | Servicio | URL | Usuario | Contraseña |
 |----------|-----|---------|------------|
 | PostgreSQL | `localhost:5432` | `analytics_user` | `analytics_pass_456` |
-| Grafana | http://localhost:3000 | `admin` | `analytics_admin_789` |
-| Prometheus | http://localhost:9090 | - | - |
+| Grafana | http://localhost:3003 | `admin` | `analytics_admin_789` |
+| Prometheus | http://localhost:9093 | - | - |
 
----
+
 
 ## 📊 Dashboards de Grafana (6 Paneles)
 
@@ -637,12 +681,6 @@ Este proyecto está bajo licencia MIT. Ver archivo [LICENCE](../LICENCE) para m�
 - **PostgreSQL Docs:** https://www.postgresql.org/docs/17/
 - **Prometheus Docs:** https://prometheus.io/docs/
 - **Grafana Docs:** https://grafana.com/docs/
-GRAFANA_PORT=3001
-
-# Solución 2: Detener otros contenedores
-docker ps  # Ver qué usa el puerto
-docker stop <container-id>
-```
 
 ---
 

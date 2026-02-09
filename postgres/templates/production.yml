@@ -12,10 +12,10 @@ services:
     container_name: postgres_prod
     hostname: postgres-prod
     environment:
-      # Credenciales básicas (usar postgres por defecto, prod_user se crea en init scripts)
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_pass_secure_123
-      POSTGRES_DB: postgres
+      # Credenciales básicas (obligatorio, cambiar en el.env)
+      POSTGRES_USER: POSTGRES_USER
+      POSTGRES_PASSWORD: POSTGRES_PASSWORD
+      POSTGRES_DB: POSTGRES_DB
       
       # Configuración de producción (alta performance)
       POSTGRES_SHARED_BUFFERS: ${POSTGRES_SHARED_BUFFERS:-2GB}

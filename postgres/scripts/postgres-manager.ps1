@@ -1,4 +1,4 @@
-# ====================================================================================
+﻿# ====================================================================================
 # SCRIPT MAESTRO: GESTIÓN DE POSTGRESQL + MONITOREO
 # ====================================================================================
 # Script interactivo para gestionar las 4 modalidades de PostgreSQL
@@ -100,16 +100,32 @@ function Stop-AllEnvironments {
     Write-Host "🛑 Deteniendo todos los ambientes..." -ForegroundColor Yellow
     Write-Host ""
     
-    $templates = @("development.yml", "testing.yml", "production.yml", "analytics.yml")
+    # Obtener todos los contenedores relacionados con PostgreSQL
+    $containers = docker ps --filter "name=postgres" --filter "name=grafana" --filter "name=prometheus" --format "{{.Names}}"
     
-    foreach ($template in $templates) {
-        $envName = $template -replace ".yml", ""
-        Write-Host "  Deteniendo $envName..." -ForegroundColor Gray
-        docker-compose -f "templates/$template" stop 2>$null
+    if ($containers) {
+        Write-Host "  📋 Contenedores encontrados:" -ForegroundColor Cyan
+        $containers | ForEach-Object { Write-Host "    - $_" -ForegroundColor Gray }
+        Write-Host ""
+        
+        Write-Host "  ⏹️  Deteniendo contenedores..." -ForegroundColor Yellow
+        
+        foreach ($container in $containers) {
+            Write-Host "    Deteniendo: $container" -ForegroundColor Gray
+            docker stop $container 2>$null
+            if ($LASTEXITCODE -eq 0) {
+                Write-Host "    ✅ $container detenido" -ForegroundColor Green
+            } else {
+                Write-Host "    ❌ Error deteniendo $container" -ForegroundColor Red
+            }
+        }
+        
+        Write-Host ""
+        Write-Host "✅ Todos los ambientes detenidos" -ForegroundColor Green
+    } else {
+        Write-Host "  ℹ️  No hay contenedores corriendo" -ForegroundColor Blue
     }
     
-    Write-Host ""
-    Write-Host "✅ Todos los ambientes detenidos" -ForegroundColor Green
     Write-Host ""
 }
 
@@ -125,16 +141,46 @@ function Remove-AllEnvironments {
         Write-Host "🗑️  Eliminando todos los ambientes y datos..." -ForegroundColor Red
         Write-Host ""
         
-        $templates = @("development.yml", "testing.yml", "production.yml", "analytics.yml")
+        # Obtener todos los contenedores relacionados con PostgreSQL
+        $containers = docker ps -a --filter "name=postgres" --filter "name=grafana" --filter "name=prometheus" --format "{{.Names}}"
         
-        foreach ($template in $templates) {
-            $envName = $template -replace ".yml", ""
-            Write-Host "  Eliminando $envName..." -ForegroundColor Gray
-            docker-compose -f "templates/$template" down -v 2>$null
+        if ($containers) {
+            Write-Host "  📋 Contenedores a eliminar:" -ForegroundColor Cyan
+            $containers | ForEach-Object { Write-Host "    - $_" -ForegroundColor Gray }
+            Write-Host ""
+            
+            # Detener contenedores primero
+            Write-Host "  ⏹️  Deteniendo contenedores..." -ForegroundColor Yellow
+            docker stop $containers 2>$null
+            
+            # Eliminar contenedores
+            Write-Host "  🗑️  Eliminando contenedores..." -ForegroundColor Red
+            docker rm $containers 2>$null
+            
+            # Eliminar volúmenes relacionados
+            Write-Host "  🗃️  Eliminando volúmenes..." -ForegroundColor Red
+            $volumes = docker volume ls --filter "name=postgres" --format "{{.Name}}"
+            if ($volumes) {
+                docker volume rm $volumes 2>$null
+            }
+            
+            # Eliminar redes relacionadas
+            Write-Host "  🌐 Eliminando redes..." -ForegroundColor Red
+            $networks = docker network ls --filter "name=postgres" --filter "name=dev_network" --filter "name=test_network" --filter "name=prod_network" --filter "name=analytics_network" --format "{{.Name}}"
+            if ($networks) {
+                $networks | ForEach-Object {
+                    if ($_ -ne "bridge" -and $_ -ne "host" -and $_ -ne "none") {
+                        docker network rm $_ 2>$null
+                    }
+                }
+            }
+            
+            Write-Host ""
+            Write-Host "✅ Todos los ambientes eliminados" -ForegroundColor Green
+        } else {
+            Write-Host "  ℹ️  No hay contenedores relacionados encontrados" -ForegroundColor Blue
         }
         
-        Write-Host ""
-        Write-Host "✅ Todos los ambientes eliminados" -ForegroundColor Green
         Write-Host ""
     } else {
         Write-Host ""
@@ -174,18 +220,23 @@ function Show-Help {
     Write-Host ""
     Write-Host "💡 Comandos Docker útiles:" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "  Ver logs:      docker logs -f <container_name>" -ForegroundColor Gray
+    Write-Host "  Ver logs:      docker logs -f [container_name]" -ForegroundColor Gray
     Write-Host "  Conectar:      docker exec -it postgres_dev psql -U dev_user -d dev_database" -ForegroundColor Gray
-    Write-Host "  Reiniciar:     docker restart <container_name>" -ForegroundColor Gray
+    Write-Host "  Reiniciar:     docker restart [container_name]" -ForegroundColor Gray
     Write-Host "  Stats:         docker stats" -ForegroundColor Gray
     Write-Host ""
     Write-Host "==================================================================" -ForegroundColor Cyan
     Write-Host ""
 }
 
-# Navegar al directorio del script
-$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $scriptPath
+# Asegurarse de estar en el directorio correcto (scripts)
+$currentDir = Get-Location
+if (-not ($currentDir.Path -like "*scripts*")) {
+    # Si no estamos en scripts, tratar de navegar allí
+    if (Test-Path "scripts") {
+        Set-Location "scripts"
+    }
+}
 
 # Loop principal
 do {
@@ -206,13 +257,13 @@ do {
         "8" { Show-Help }
         "9" { 
             Write-Host ""
-            Write-Host "👋 ¡Hasta luego!" -ForegroundColor Cyan
+            Write-Host "Hasta luego!" -ForegroundColor Cyan
             Write-Host ""
             exit 
         }
         default { 
             Write-Host ""
-            Write-Host "❌ Opción inválida" -ForegroundColor Red
+            Write-Host "Opcion invalida" -ForegroundColor Red
             Write-Host ""
         }
     }
